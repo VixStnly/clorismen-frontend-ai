@@ -79,7 +79,7 @@ export default function Coverflow() {
                 setTick((t) => t + 1);
               }}>
               <div className="frame"><div className="inner">
-                <img className="photo" src={p.img} onError={fbError(p.id)} alt={`${p.name} berkolaborasi dengan Clorismen`} loading="lazy" draggable="false" />
+                <img className="photo" src={p.img} onError={fbError(p.id)} alt={`${p.name} berkolaborasi dengan Clorismen`} loading="lazy" decoding="async" draggable="false" />
                 <div className="tint2" /><div className="tint" />
                 <div className="bigname"><span>{p.big[0]}</span><span>{p.big[1]}</span></div>
                 <span className="idx">{String(i + 1).padStart(2, '0')}</span>

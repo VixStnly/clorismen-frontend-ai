@@ -15,7 +15,7 @@ export default function Ebook() {
               <div className="front">
                 <div className="cover">
                   <div className="lines"></div>
-                  <div className="cv-top"><img src="images/logo-white.png" alt="Clorismen" /><span>EBOOK EKSKLUSIF</span></div>
+                  <div className="cv-top"><img src="/images/opt/logo-white.webp" alt="Clorismen" loading="lazy" decoding="async" /><span>EBOOK EKSKLUSIF</span></div>
                   <div className="big30">30<small>HARI</small></div>
                   <div className="ttl">Strategi Tampil <em>Lebih Baik</em> Sebagai Seorang Pria</div>
                   <div className="bar4"><i></i><i></i><i></i><i></i></div>

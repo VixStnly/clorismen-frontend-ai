@@ -8,13 +8,16 @@ import './vip.css';
 
 /* Aset glossy hasil generate ulang: tools/make_vip_lux_images.py → images/vip-lux/ */
 const IMG = {
-  bundle: '/images/vip-lux/hero-bundle-light.webp',
-  micellar: '/images/vip-lux/prod-micellar.webp',
-  facewash: '/images/vip-lux/prod-facewash.webp',
-  serum: '/images/vip-lux/prod-serum.webp',
-  sunscreen: '/images/vip-lux/prod-sunscreen.webp',
-  logo: '/images/vip-lux/logo-dark.webp',
-  logoGold: '/images/vip-lux/logo-gold.webp',
+  // Versi ringan untuk web (tools/optimize_images.py → images/opt/)
+  bundle: '/images/opt/vip-hero-bundle.webp',
+  bundleSet: '/images/opt/vip-hero-bundle-600.webp 600w, /images/opt/vip-hero-bundle.webp 1000w',
+  bundleMask: '/images/opt/vip-hero-bundle-600.webp',
+  micellar: '/images/opt/vip-prod-micellar.webp',
+  facewash: '/images/opt/vip-prod-facewash.webp',
+  serum: '/images/opt/vip-prod-serum.webp',
+  sunscreen: '/images/opt/vip-prod-sunscreen.webp',
+  logo: '/images/opt/vip-logo-dark.webp',
+  logoGold: '/images/opt/vip-logo-gold.webp',
 };
 
 const VIP_PKG = VIP.packages.find((p) => p.hot) || VIP.packages[VIP.packages.length - 1];
@@ -142,8 +145,8 @@ function Hero() {
         <div className="vx-halo" aria-hidden="true" />
         <div className="vx-orbit" aria-hidden="true" />
         <div className="vx-orbit o2" aria-hidden="true" />
-        <img className="vx-bundle" src={IMG.bundle} alt="Paket Bundling Clorismen: box eksklusif berisi Micellar Water, Face Wash, Brightening Serum, dan Sunscreen" width="1400" height="1260" fetchPriority="high" />
-        <div className="vx-sweep" aria-hidden="true" />
+        <img className="vx-bundle" src={IMG.bundle} srcSet={IMG.bundleSet} sizes="(min-width: 960px) 560px, 100vw" decoding="async" alt="Paket Bundling Clorismen: box eksklusif berisi Micellar Water, Face Wash, Brightening Serum, dan Sunscreen" width="1400" height="1260" fetchPriority="high" />
+        <div className="vx-sweep" aria-hidden="true" style={{ WebkitMaskImage: `url(${IMG.bundleMask})`, maskImage: `url(${IMG.bundleMask})` }} />
         <div className="vx-badge-bpom">
           <span><i className="fa-solid fa-shield-halved" /> 100% Original BPOM</span>
           <em />
@@ -214,7 +217,7 @@ function Education() {
         <div className="vx-shelf-row">
           {ROUTINE.map((r, i) => (
             <figure key={r.k} className="vx-shelf-item" style={{ '--d': `${0.1 + i * 0.1}s`, '--f': `${i * 0.6}s` }}>
-              <div className="vx-shelf-img"><img src={IMG[r.k]} alt={r.n} loading="lazy" width="120" height="300" /></div>
+              <div className="vx-shelf-img"><img src={IMG[r.k]} alt={r.n} loading="lazy" decoding="async" width="120" height="300" /></div>
               <figcaption><b>{r.v}</b><span>{r.n}</span></figcaption>
             </figure>
           ))}
@@ -234,7 +237,7 @@ function EbookCover() {
           <i className="fa-solid fa-user-tie vx-book-ic" />
           <b>{VIP.ebookTitle}</b>
           <span className="vx-book-line" />
-          <img src={IMG.logoGold} alt="" width="80" height="44" />
+          <img src={IMG.logoGold} alt="" width="80" height="44" loading="lazy" decoding="async" />
         </div>
         <div className="vx-book-spine" />
         <div className="vx-book-pages" />
@@ -274,7 +277,7 @@ function ValueStack() {
 
       <div className="vx-stack vx-glass" data-rv data-glow>
         <div className="vx-stack-visual">
-          <img className="vx-stack-bundle" src={IMG.bundle} alt="" loading="lazy" width="700" height="630" />
+          <img className="vx-stack-bundle" src={IMG.bundle} srcSet={IMG.bundleSet} sizes="(min-width: 960px) 380px, 70vw" alt="" loading="lazy" decoding="async" width="700" height="630" />
           <EbookCover />
         </div>
         <ul className="vx-checklist">
@@ -716,7 +719,7 @@ export default function VipPage() {
     setMeta('description', 'Paket Lengkap Perawatan Pria Clorismen 30 hari dengan harga khusus member VIP, bonus E-Book eksklusif, konsultasi Ahli Kesehatan Kulit, gratis ongkir.');
     setMeta('theme-color', '#121C26');
     const pre = document.createElement('link');
-    pre.rel = 'preload'; pre.as = 'image'; pre.href = IMG.bundle;
+    pre.rel = 'preload'; pre.as = 'image'; pre.href = IMG.bundle; pre.setAttribute('imagesrcset', IMG.bundleSet); pre.setAttribute('imagesizes', '(min-width: 960px) 560px, 100vw'); pre.setAttribute('fetchpriority', 'high');
     document.head.appendChild(pre);
     initPixel(); // Meta: PageView
     return () => pre.remove();

@@ -16,6 +16,15 @@ DirectoryIndex index.html
     RewriteRule ^ index.html [L]
 </IfModule>
 
+# Kompres teks (HTML/CSS/JS/JSON/SVG) supaya transfer lebih kecil
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>
+
+<IfModule mod_mime.c>
+    AddType image/webp .webp
+</IfModule>
+
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-Frame-Options "SAMEORIGIN"

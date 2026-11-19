@@ -6,11 +6,43 @@
 <title>Clorismen Clean Skin Series — Muka Bersih Maksimal Buat Cowok Aktif</title>
 <meta name="description" content="Clorismen Clean Skin Series: Micellar Water, Face Wash, Brightening Serum & Sunscreen. 4 langkah perawatan wajah pria. Promo khusus website + gratis ongkir + bonus ebook." />
 <meta name="theme-color" content="#040a14" />
-<link rel="icon" href="/images/logo-white.png" />
+<link rel="icon" href="/images/opt/logo-white.webp" type="image/webp" />
+<!-- Mulai unduh gambar layar pertama SEBELUM JavaScript selesai dimuat (gambar tampil < 2 detik) -->
+<script>
+(function () {
+  var p = location.pathname.replace(/\/+$/, '').toLowerCase();
+  var L = p === '/vip-paket-clorismen'
+    ? [
+        ['/images/opt/vip-hero-bundle.webp', '/images/opt/vip-hero-bundle-600.webp 600w, /images/opt/vip-hero-bundle.webp 1000w', '(min-width: 960px) 560px, 100vw'],
+        ['/images/opt/vip-logo-dark.webp']
+      ]
+    : [
+        ['/images/opt/hero-model.webp', '/images/opt/hero-model-560.webp 560w, /images/opt/hero-model.webp 896w', '(max-width: 760px) 90vw, 520px'],
+        ['/images/opt/logo-white.webp'],
+        ['/images/opt/prod-facewash.webp'], ['/images/opt/prod-serum.webp'],
+        ['/images/opt/prod-sunscreen.webp'], ['/images/opt/prod-micellar.webp']
+      ];
+  for (var i = 0; i < L.length; i++) {
+    var l = document.createElement('link');
+    l.rel = 'preload'; l.as = 'image'; l.href = L[i][0];
+    if (L[i][1]) { l.setAttribute('imagesrcset', L[i][1]); l.setAttribute('imagesizes', L[i][2]); }
+    if (i === 0) l.setAttribute('fetchpriority', 'high');
+    document.head.appendChild(l);
+  }
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wdth,wght@62..125,400..900&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet" />
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+<!-- Font & ikon dimuat tanpa memblokir tampilan pertama (teks langsung tampil, font menyusul) -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wdth,wght@62..125,400..900&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wdth,wght@62..125,400..900&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" media="print" onload="this.media='all'" />
+<link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin media="print" onload="this.media='all'" />
+<noscript>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wdth,wght@62..125,400..900&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+</noscript>
 </head>
 <body>
 <div id="root"></div>

@@ -251,7 +251,7 @@ body { margin: 0; background: #f3efe6; }
 @keyframes vxSpin { to { rotate: 360deg; } }
 .vx-sweep {
   position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden;
-  -webkit-mask-image: url('/images/vip-lux/hero-bundle-light.webp'); mask-image: url('/images/vip-lux/hero-bundle-light.webp');
+  /* mask-image diisi inline di VipPage.jsx (pakai file yang sama dengan gambar hero, tanpa unduhan ganda) */
   -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
   animation: vxFloat 6s ease-in-out infinite;
 }

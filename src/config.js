@@ -24,10 +24,11 @@ export const waLink = (txt = 'Halo admin Clorismen, saya mau tanya soal Clean Sk
 // Foto dipakai dari folder images/ (lokal). Kalau file belum ada, otomatis coba ambil dari Google Drive.
 export const drive = (id, w = 900) => `https://lh3.googleusercontent.com/d/${id}=w${w}`;
 export const LOCAL = {
-  micellar: '/images/prod-micellar.png',
-  facewash: '/images/prod-facewash.png',
-  serum: '/images/prod-serum.png',
-  sunscreen: '/images/prod-sunscreen.png',
+  // WebP ringan hasil tools/optimize_images.py (PNG asli 240-320 KB → ±30 KB)
+  micellar: '/images/opt/prod-micellar.webp',
+  facewash: '/images/opt/prod-facewash.webp',
+  serum: '/images/opt/prod-serum.webp',
+  sunscreen: '/images/opt/prod-sunscreen.webp',
 };
 export const pimg = (key) => LOCAL[key];
 export const PRODUCTS = {

@@ -32,16 +32,16 @@ export default function Hero() {
           <div className="hero-visual" data-reveal="zoom" style={{'--d': ".2s"}}>
             <div className="hero-ring"></div>
             <div className="hero-ring r2"></div>
-            <div className="hero-arch"><img src="images/hero-model.jpg" alt="Cowok dengan wajah bersih dan segar" /></div>
+            <div className="hero-arch"><img src="/images/opt/hero-model.webp" srcSet="/images/opt/hero-model-560.webp 560w, /images/opt/hero-model.webp 896w" sizes="(max-width: 760px) 90vw, 520px" alt="Cowok dengan wajah bersih dan segar" fetchPriority="high" decoding="async" /></div>
             <Bubbles />
             <div className="fbadge glass fb1"><div className="ic"><i className="fa-solid fa-star"></i></div><div><b>4.8/5</b><small>79.000+ ulasan</small></div></div>
             <div className="fbadge glass fb2"><div className="ic"><i className="fa-solid fa-droplet"></i></div><div><b>Tanpa Bilas</b><small>Micellar Water Spray</small></div></div>
             <div className="hero-products">
               <div className="podium"></div>
-              <div className="hp h-fw"><ProdImg k="facewash" alt="Face Wash 3in1" /></div>
-              <div className="hp h-ss"><ProdImg k="sunscreen" alt="Sunscreen" /></div>
-              <div className="hp h-se"><ProdImg k="serum" alt="Brightening Serum" /></div>
-              <div className="hp h-mic"><ProdImg k="micellar" alt="Micellar Water Spray" /></div>
+              <div className="hp h-fw"><ProdImg k="facewash" alt="Face Wash 3in1" eager /></div>
+              <div className="hp h-ss"><ProdImg k="sunscreen" alt="Sunscreen" eager /></div>
+              <div className="hp h-se"><ProdImg k="serum" alt="Brightening Serum" eager /></div>
+              <div className="hp h-mic"><ProdImg k="micellar" alt="Micellar Water Spray" eager /></div>
             </div>
           </div>
         </div>

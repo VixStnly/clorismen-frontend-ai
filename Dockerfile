@@ -8,7 +8,7 @@ COPY . .
 RUN npm run build
 
 FROM php:8.4-apache
-RUN a2enmod rewrite headers
+RUN a2enmod rewrite headers deflate mime
 
 WORKDIR /var/www/html
 COPY --from=build /app/dist ./dist

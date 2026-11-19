@@ -36,7 +36,7 @@ export const VIP = {
     name: 'Micellar Water Travel Size',       // GANTI
     price: 39000,                             // GANTI
     normal: 79000,                            // GANTI
-    img: '/images/vip-lux/prod-micellar.webp',
+    img: '/images/opt/vip-prod-micellar.webp',
   },
 
   ebookTitle: 'Rahasia Pria yang Diidamkan Wanita',
@@ -56,7 +56,7 @@ export const VIP = {
     title: '“Dulu kirain cuci muka doang cukup, ternyata salah total...”',
     // Foto asli pembeli belum ada → pakai foto model + paket, diberi label "Foto ilustrasi (model)".
     // Kalau nanti ada foto asli: photo: '/images/vip/review-rizky.webp', photoIllustration: false
-    photo: '/images/vip-lux/review-ilustrasi.webp',
+    photo: '/images/opt/vip-review-ilustrasi.webp',
     photoIllustration: true,
     rating: 4.9,
     days: [

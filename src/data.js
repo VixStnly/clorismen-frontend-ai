@@ -1,11 +1,11 @@
 export const INFLUENCERS = [
-  { img: '/images/inf-aloy.jpg', name: 'Aloy', role: 'Content Creator', meta: 'Clorismen × Aloy', id: '1coPzYa1uwoYsFExcraTkIxtIAZpsiYv4', tint: '#a63cff', big: ['ALOY', 'ALOY'] },
-  { img: '/images/inf-paris.jpg', name: 'Paris Pernandes', role: 'Content Creator', meta: 'Clorismen × Paris Pernandes', id: '1p1dQD4MZOorf5G1saFq8oRIdvLy8q0C6', tint: '#ff3b5c', big: ['PARIS', 'PERNANDES'] },
-  { img: '/images/inf-kkajhe.jpg', name: 'Kkajhe', role: 'Content Creator', meta: 'Clorismen × Kkajhe', id: '1hjKCuPa4f-PR3_pY-k_2fjNlULOfDmeF', tint: '#2c7cff', big: ['KKAJHE', 'KKAJHE'] },
-  { img: '/images/inf-kevin.jpg', name: 'Kevin Aprilio', role: 'Musisi', meta: 'Clorismen × Kevin Aprilio', id: '1DPKq8tHKQlYYTO7lDfWNaAHKuRwTbHys', tint: '#18c7e8', big: ['KEVIN', 'APRILIO'] },
-  { img: '/images/inf-sansan.jpg', name: 'Sansan', role: 'Musisi', meta: 'Pee Wee Gaskins', id: '18xWrjMr5Ci55zpr9SjFrH4YyxyS4j1xI', tint: '#d8f03c', big: ['SANSAN', 'PWG'] },
-  { img: '/images/inf-coki.jpg', name: 'Coki Pardede', role: 'Komika', meta: 'Clorismen × Coki Pardede', id: '1xNHCQAXIa1ZfEKFhg8fyZuPUhfhtf2Wq', tint: '#ff8a1f', big: ['COKI', 'PARDEDE'] },
-  { img: '/images/inf-rudy.jpg', name: 'Rudy Golden Boy', role: 'Content Creator', meta: 'Clorismen × Rudy Golden Boy', id: '1Y_5AfFvVjFNAeVCzNZJ8ILYQpmP9RFBU', tint: '#ffc94a', big: ['RUDY', 'GOLDEN'] },
+  { img: '/images/opt/inf-aloy.webp', name: 'Aloy', role: 'Content Creator', meta: 'Clorismen × Aloy', id: '1coPzYa1uwoYsFExcraTkIxtIAZpsiYv4', tint: '#a63cff', big: ['ALOY', 'ALOY'] },
+  { img: '/images/opt/inf-paris.webp', name: 'Paris Pernandes', role: 'Content Creator', meta: 'Clorismen × Paris Pernandes', id: '1p1dQD4MZOorf5G1saFq8oRIdvLy8q0C6', tint: '#ff3b5c', big: ['PARIS', 'PERNANDES'] },
+  { img: '/images/opt/inf-kkajhe.webp', name: 'Kkajhe', role: 'Content Creator', meta: 'Clorismen × Kkajhe', id: '1hjKCuPa4f-PR3_pY-k_2fjNlULOfDmeF', tint: '#2c7cff', big: ['KKAJHE', 'KKAJHE'] },
+  { img: '/images/opt/inf-kevin.webp', name: 'Kevin Aprilio', role: 'Musisi', meta: 'Clorismen × Kevin Aprilio', id: '1DPKq8tHKQlYYTO7lDfWNaAHKuRwTbHys', tint: '#18c7e8', big: ['KEVIN', 'APRILIO'] },
+  { img: '/images/opt/inf-sansan.webp', name: 'Sansan', role: 'Musisi', meta: 'Pee Wee Gaskins', id: '18xWrjMr5Ci55zpr9SjFrH4YyxyS4j1xI', tint: '#d8f03c', big: ['SANSAN', 'PWG'] },
+  { img: '/images/opt/inf-coki.webp', name: 'Coki Pardede', role: 'Komika', meta: 'Clorismen × Coki Pardede', id: '1xNHCQAXIa1ZfEKFhg8fyZuPUhfhtf2Wq', tint: '#ff8a1f', big: ['COKI', 'PARDEDE'] },
+  { img: '/images/opt/inf-rudy.webp', name: 'Rudy Golden Boy', role: 'Content Creator', meta: 'Clorismen × Rudy Golden Boy', id: '1Y_5AfFvVjFNAeVCzNZJ8ILYQpmP9RFBU', tint: '#ffc94a', big: ['RUDY', 'GOLDEN'] },
   // Tambahkan: video: 'https://...mp4' untuk memutar cuplikan kolaborasi di popup
 ];
 

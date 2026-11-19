@@ -5,7 +5,7 @@ export default function Footer() {
     <>
       <footer>
         <div className="wrap inner">
-          <img src="images/logo-white.png" alt="Clorismen" />
+          <img src="/images/opt/logo-white.webp" alt="Clorismen" loading="lazy" decoding="async" />
           <span>© 2026 Clorismen Official · Skincare untuk kulit cowok Indonesia sejak 2016</span>
         </div>
       </footer>

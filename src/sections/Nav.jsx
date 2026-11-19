@@ -5,7 +5,7 @@ export default function Nav() {
     <>
       <nav className="nav" id="nav">
         <div className="wrap inner">
-          <a href="#top" className="logo" aria-label="Clorismen"><img src="images/logo-white.png" alt="Clorismen" /></a>
+          <a href="#top" className="logo" aria-label="Clorismen"><img src="/images/opt/logo-white.webp" alt="Clorismen" fetchPriority="high" /></a>
           <ul>
             <li><a href="#solusi">Isi Paket</a></li>
             <li><a href="#cara-pakai">Cara Pakai</a></li>
