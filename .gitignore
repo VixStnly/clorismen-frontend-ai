@@ -1,3 +1,10 @@
+*.docx
 index-lama.html
 .DS_Store
 Thumbs.db
+node_modules
+dist
+server/config.local.php
+server/cache
+.env
+.env.local

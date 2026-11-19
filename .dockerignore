@@ -1,8 +1,12 @@
 .git
 .gitignore
-Dockerfile
-.dockerignore
-DEPLOY.md
-BLUEPRINT.md
+node_modules
+dist
 index-lama.html
+index.static.html
 *.docx
+BLUEPRINT.md
+DEPLOY.md
+nginx.conf
+server/config.local.php
+server/cache

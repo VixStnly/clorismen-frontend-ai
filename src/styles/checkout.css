@@ -1,0 +1,6 @@
+/* Tambahan kecil untuk dialog hasil pesanan (memakai kelas .lightbox/.box yang sudah ada).
+   Tidak mengubah gaya halaman landing yang lain. */
+.lightbox .box.payd{grid-template-columns:1fr;width:min(480px,92vw)}
+.lightbox .box.payd .txt{padding:34px 30px}
+.lightbox .box.payd .btn{justify-content:center}
+.btn[disabled]{opacity:.7;cursor:progress}
