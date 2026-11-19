@@ -45,7 +45,7 @@ export const VIP = {
 
   slotsLeft: 7,                               // GANTI: isi angka kuota yang benar, atau null untuk menyembunyikan
 
-  metaPixelId: null,                          // GANTI: ID Meta Pixel, contoh '123456789012345'
+  // Meta Pixel diatur lewat env VITE_META_PIXEL_ID saat build (lihat src/lib/pixel.js)
 
   // Review card "Day 1 vs Day 14" (Section 4). Pembeli asli, sudah setuju ceritanya ditampilkan.
   // Foto: 1 foto tunggal pembeli memegang box paket, cahaya natural (BUKAN foto before-after).

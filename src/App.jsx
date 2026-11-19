@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { initPixel } from './lib/pixel.js';
 import { OrderProvider } from './state/OrderContext.jsx';
 import { useGlobalEffects } from './hooks/useGlobalEffects.js';
 import Topbar from './sections/Topbar.jsx';
@@ -25,6 +27,7 @@ import Footer from './sections/Footer.jsx';
 
 export default function App() {
   useGlobalEffects();
+  useEffect(() => { initPixel(); }, []); // Meta: PageView
   return (
     <OrderProvider>
       <Topbar />

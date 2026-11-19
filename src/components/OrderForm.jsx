@@ -3,6 +3,7 @@ import { CONFIG, rp, waLink } from '../config.js';
 import { api } from '../lib/api.js';
 import { loadMidtransSnap } from '../lib/midtrans.js';
 import { useOrder } from '../state/OrderContext.jsx';
+import { track } from '../lib/pixel.js';
 import ProdImg from './ProdImg.jsx';
 import DestinationPicker, { destText, destValid } from './DestinationPicker.jsx';
 
@@ -63,7 +64,13 @@ export function OrderForm() {
 
   const red = (k) => (bad[k] ? { borderColor: 'var(--red)' } : undefined);
 
-  const finish = (status, extra = {}) => { setResult({ status, ...extra }); setBusy(false); };
+  const finish = (status, extra = {}) => {
+    setResult({ status, ...extra });
+    setBusy(false);
+    // Meta: Purchase saat pembayaran sudah pasti (lunas / COD tercatat)
+    if (status === 'paid' || status === 'cod') track('Purchase', { value: extra.total || 0, currency: 'IDR', content_name: 'Clean Skin Series' }, false);
+  };
+  const startCheckout = () => track('InitiateCheckout', { content_name: 'Clean Skin Series', currency: 'IDR' });
 
   const runSnap = async (data, pkgLabel) => {
     const snap = await loadMidtransSnap(data.snap_js_url, data.client_key);
@@ -138,7 +145,7 @@ export function OrderForm() {
 
   return (
     <>
-      <form className="form glass gborder" id="orderForm" data-reveal="left" noValidate onSubmit={submit}>
+      <form className="form glass gborder" id="orderForm" data-reveal="left" noValidate onSubmit={submit} onFocus={startCheckout}>
         <div className="fg"><label htmlFor="fName"><i className="fa-solid fa-user" />Nama lengkap</label>
           <input ref={refs.name} className="inp" id="fName" required placeholder="Contoh: Andika Pratama" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} style={red('name')} /></div>
         <div className="fg"><label htmlFor="fWa"><i className="fa-brands fa-whatsapp" />Nomor WhatsApp <small style={{ color: 'var(--muted)', fontWeight: 600 }}>(konfirmasi, resi &amp; kirim ebook)</small></label>
