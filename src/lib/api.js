@@ -40,5 +40,6 @@ export const api = {
   createOrderIntent: (payload) => request('order-intents', { method: 'POST', body: JSON.stringify(payload) }),
   orderDetail: (code) => request(`order-intents/${encodeURIComponent(code)}`),
   searchDestinations: (q, signal) => request(`destinations?q=${encodeURIComponent(q)}`, { signal }),
-  verifyPayment: (code) => request(`order-intents/${encodeURIComponent(code)}/verify-payment`, { method: 'POST' }),
+  // BFF hanya menerima POST ber-Content-Type JSON; tanpa body → 415 dan verifikasi diam-diam gagal.
+  verifyPayment: (code) => request(`order-intents/${encodeURIComponent(code)}/verify-payment`, { method: 'POST', body: '{}' }),
 };
