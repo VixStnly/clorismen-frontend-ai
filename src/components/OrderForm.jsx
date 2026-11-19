@@ -4,6 +4,7 @@ import { api } from '../lib/api.js';
 import { loadMidtransSnap } from '../lib/midtrans.js';
 import { useOrder } from '../state/OrderContext.jsx';
 import ProdImg from './ProdImg.jsx';
+import DestinationPicker, { destText, destValid } from './DestinationPicker.jsx';
 
 /* Dialog hasil pesanan: memakai kelas .lightbox/.box yang sudah ada (tanpa gaya baru selain lebar, lihat checkout.css) */
 const STATUS_COPY = {
@@ -52,11 +53,12 @@ export function OrderForm() {
   const [name, setName] = useState('');
   const [wa, setWa] = useState('');
   const [addr, setAddr] = useState('');
+  const [dest, setDest] = useState(null); // kecamatan dari RajaOngkir
   const [pay, setPay] = useState('Transfer');
   const [bad, setBad] = useState({});
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
-  const refs = { name: useRef(null), wa: useRef(null), addr: useRef(null) };
+  const refs = { name: useRef(null), wa: useRef(null), addr: useRef(null), dest: useRef(null) };
   const snapRef = useRef(null);
 
   const red = (k) => (bad[k] ? { borderColor: 'var(--red)' } : undefined);
@@ -81,22 +83,25 @@ export function OrderForm() {
   const submit = async (e) => {
     e.preventDefault();
     if (busy) return;
-    const v = { name: !!name.trim(), wa: wa.replace(/\D/g, '').length >= 9, addr: addr.trim().length > 10 };
-    const nextBad = { name: !v.name, wa: !v.wa, addr: !v.addr };
+    const v = { name: !!name.trim(), wa: wa.replace(/\D/g, '').length >= 9, dest: destValid(dest), addr: addr.trim().length >= 8 };
+    const nextBad = { name: !v.name, wa: !v.wa, dest: !v.dest, addr: !v.addr };
     setBad(nextBad);
-    const first = ['name', 'wa', 'addr'].find((k) => nextBad[k]);
+    const first = ['name', 'wa', 'dest', 'addr'].find((k) => nextBad[k]);
     if (first) { refs[first].current?.focus(); return; }
 
     const p = CONFIG.packages[qtyIdx];
     setBusy(true);
 
-    const meta = [bump ? '+1 Micellar Water ekstra' : '', `Bayar: ${pay}`].filter(Boolean).join(' | ');
+    // Alamat jalan + wilayah RajaOngkir disimpan di catatan pesanan (maks 300 karakter di ERP)
+    const area = destText(dest);
+    const fullAddr = `${addr.trim()}, ${area}`;
+    const meta = [area, bump ? '+1 Micellar Water ekstra' : '', `Bayar: ${pay}`].filter(Boolean).join(' | ');
     const room = 300 - meta.length - 3;
-    const note = room > 20 ? `${addr.trim().slice(0, room)} | ${meta}` : addr.trim().slice(0, 300);
+    const note = room > 10 ? `${addr.trim().slice(0, room)} | ${meta}` : fullAddr.slice(0, 300);
 
     const waFallback = waLink(
       `Halo admin Clorismen, saya mau order *Clean Skin Series* (promo website)\n\n` +
-      `Nama: ${name.trim()}\nWhatsApp: ${wa.trim()}\nAlamat: ${addr.trim()}\n\n` +
+      `Nama: ${name.trim()}\nWhatsApp: ${wa.trim()}\nAlamat: ${fullAddr}\n\n` +
       `Jumlah: ${p.qty} Paket (${rp(p.price)})\n` + (bump ? `+ Tambah 1 Micellar Water ekstra\n` : '') +
       `Pembayaran: ${pay}\n\nTermasuk: Ebook 30 Hari + Konsultasi WA + Gratis Ongkir`,
     );
@@ -138,8 +143,11 @@ export function OrderForm() {
           <input ref={refs.name} className="inp" id="fName" required placeholder="Contoh: Andika Pratama" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} style={red('name')} /></div>
         <div className="fg"><label htmlFor="fWa"><i className="fa-brands fa-whatsapp" />Nomor WhatsApp <small style={{ color: 'var(--muted)', fontWeight: 600 }}>(konfirmasi, resi &amp; kirim ebook)</small></label>
           <input ref={refs.wa} className="inp" id="fWa" required inputMode="tel" placeholder="08xxxxxxxxxx" autoComplete="tel" value={wa} onChange={(e) => setWa(e.target.value)} style={red('wa')} /></div>
+        <div className="fg"><label htmlFor="fDest"><i className="fa-solid fa-map-location-dot" />Kecamatan / Kota</label>
+          <DestinationPicker id="fDest" theme="dark" inputClassName="inp" inputRef={refs.dest} value={dest} onChange={setDest} invalid={!!bad.dest} invalidStyle={{ borderColor: 'var(--red)' }} />
+          {bad.dest ? <small style={{ color: 'var(--red)', display: 'block', marginTop: '6px' }}>Ketik lalu pilih kecamatan dari daftar.</small> : null}</div>
         <div className="fg"><label htmlFor="fAddr"><i className="fa-solid fa-location-dot" />Alamat lengkap</label>
-          <textarea ref={refs.addr} className="inp" id="fAddr" required placeholder="Jalan, nomor rumah, RT/RW, kelurahan, kecamatan, kota, kode pos" autoComplete="street-address" value={addr} onChange={(e) => setAddr(e.target.value)} style={red('addr')} /></div>
+          <textarea ref={refs.addr} className="inp" id="fAddr" required maxLength={180} placeholder="Nama jalan, nomor rumah, RT/RW, patokan" autoComplete="street-address" value={addr} onChange={(e) => setAddr(e.target.value)} style={red('addr')} /></div>
         <div className="fg"><label><i className="fa-solid fa-box" />Pilih jumlah</label>
           <div className="opts c3" id="qtyOpts">
             {CONFIG.packages.map((p, i) => (

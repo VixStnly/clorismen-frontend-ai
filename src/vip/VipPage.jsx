@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api.js';
 import { loadMidtransSnap } from '../lib/midtrans.js';
-import { REVIEWS } from '../data.js';
+import DestinationPicker, { destText, destValid } from '../components/DestinationPicker.jsx';
 import { VIP, rp, waUrl } from './vipConfig.js';
 import { initPixel, track } from './pixel.js';
 import './vip.css';
@@ -61,19 +61,9 @@ function usePageEffects() {
       cleanups.push(() => io.disconnect());
     }
 
-    // Parallax ringan untuk visual hero (scroll) + tilt mengikuti pointer
+    // Tilt visual hero mengikuti pointer (desktop). Parallax scroll dihapus karena badge jadi menutupi teks.
     const hero = root.querySelector('.vx-hero-visual');
     if (hero && !reduce) {
-      let raf = 0;
-      const onScroll = () => {
-        cancelAnimationFrame(raf);
-        raf = requestAnimationFrame(() => {
-          const y = Math.min(window.scrollY, 700);
-          hero.style.setProperty('--py', `${y * 0.08}px`);
-        });
-      };
-      window.addEventListener('scroll', onScroll, { passive: true });
-      cleanups.push(() => window.removeEventListener('scroll', onScroll));
       if (matchMedia('(hover: hover)').matches) {
         const mv = (e) => {
           const r = hero.getBoundingClientRect();
@@ -157,7 +147,7 @@ function Hero() {
         <div className="vx-badge-bpom">
           <span><i className="fa-solid fa-shield-halved" /> 100% Original BPOM</span>
           <em />
-          <span><i className="fa-solid fa-truck-fast" /> Gratis Ongkir &amp; Bisa COD</span>
+          <span><i className="fa-solid fa-truck-fast" /> Gratis Ongkir</span>
         </div>
       </div>
 
@@ -181,7 +171,7 @@ function Hero() {
       <ul className="vx-trust" data-rv>
         <li><i className="fa-solid fa-book-open" /> Bonus E-Book</li>
         <li><i className="fa-solid fa-user-shield" /> Konsultasi Ahli</li>
-        <li><i className="fa-solid fa-hand-holding-dollar" /> Bisa COD</li>
+        <li><i className="fa-solid fa-truck-fast" /> Gratis Ongkir</li>
       </ul>
     </header>
   );
@@ -234,109 +224,6 @@ function Education() {
   );
 }
 
-/* ================= SECTION 4: Social proof — Day 1 vs Day 14 ================= */
-function Stars({ n = 5 }) {
-  return <span className="vx-stars" aria-label={`${n} dari 5 bintang`}>{Array.from({ length: 5 }, (_, i) => <i key={i} className={`fa-solid fa-star${i < Math.round(n) ? '' : ' off'}`} />)}</span>;
-}
-
-function ReviewPhoto({ src, name, illustration }) {
-  const [ok, setOk] = useState(true);
-  if (!src || !ok) {
-    // Sementara foto asli pembeli belum ada: tampilkan paket yang dipakai (bukan foto orang),
-    // supaya tidak ada foto "pembeli" palsu. Begitu images/vip/review-rizky.webp ada, foto itu yang tampil.
-    return (
-      <div className="vx-story-ph has-product">
-        <img src={IMG.bundle} alt="Paket Lengkap VIP Clorismen yang dipakai pembeli" loading="lazy" width="700" height="630" />
-        <span className="vx-story-cap">Paket yang dipakai {name}</span>
-      </div>
-    );
-  }
-  const alt = illustration ? 'Foto ilustrasi model pria dengan Paket VIP Clorismen' : `${name} memegang box Paket Clorismen`;
-  return <img src={src} alt={alt} className="vx-story-photo" loading="lazy" onError={() => setOk(false)} />;
-}
-
-function SocialProof() {
-  const ref = useRef(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !('IntersectionObserver' in window)) return undefined;
-    // Meta: ViewContent saat pengunjung melewati Section 4
-    const io = new IntersectionObserver(([e]) => {
-      if (!e.isIntersecting && e.boundingClientRect.top < 0) {
-        track('ViewContent', { content_name: 'Paket VIP Clorismen', content_category: 'bundling', value: VIP_PKG.price, currency: 'IDR' });
-        io.disconnect();
-      }
-    }, { threshold: 0 });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  const r = VIP.storyReview;
-  const more = REVIEWS.slice(0, 6);
-  return (
-    <section className="vx-sec vx-proof" ref={ref}>
-      <Head kicker="Review Pembeli">Dari <span className="vx-gold">Day 1</span> ke <span className="vx-gold">Day 14</span></Head>
-
-      {r ? (
-        <article className="vx-story" data-rv="zoom">
-          <div className="vx-story-media">
-            <ReviewPhoto src={r.photo} name={r.name.split(' ')[0]} illustration={r.photoIllustration} />
-            {r.photoIllustration
-              ? <span className="vx-story-illus">Foto ilustrasi (model)</span>
-              : <span className="vx-story-badge"><i className="fa-solid fa-circle-check" /> Verified Buyer — Paket Lengkap VIP</span>}
-            <div className="vx-story-rating">
-              <Stars n={5} />
-              <b><span data-count={r.rating} data-dec="1">0</span>/5</b>
-            </div>
-          </div>
-          <div className="vx-story-body">
-            <h3>{r.title}</h3>
-            <div className="vx-story-who">
-              <span className="vx-avatar">{r.name.charAt(0)}</span>
-              <div><b>{r.name}</b><small>{r.meta}</small></div>
-            </div>
-            {r.photoIllustration ? <span className="vx-story-badge inline"><i className="fa-solid fa-circle-check" /> Verified Buyer — Paket Lengkap VIP</span> : null}
-            <ol className="vx-timeline">
-              {r.days.map((d, i) => (
-                <li key={d.label} data-rv style={{ '--d': `${0.1 + i * 0.15}s` }}>
-                  <div className="vx-tl-dot"><b>{d.label.replace('Day ', '')}</b></div>
-                  <div className="vx-tl-body">
-                    <div className="vx-tl-tag">{d.label} <span>({d.sub})</span></div>
-                    <p>{d.text}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-            {r.quote ? <blockquote data-rv><i className="fa-solid fa-quote-left" />{r.quote.replace(/[“”]/g, '')}</blockquote> : null}
-          </div>
-        </article>
-      ) : null}
-
-      <div className="vx-more-head" data-rv>
-        <b>Ulasan pembeli lainnya</b>
-        <span>Dari marketplace · nama disamarkan</span>
-      </div>
-      <div className="vx-reviews">
-        {more.map((rv) => (
-          <article key={rv.n + rv.d} className="vx-review vx-glass">
-            <div className="vx-review-top">
-              <div className="vx-avatar sm">{rv.n.charAt(0).toUpperCase()}</div>
-              <div><b>{rv.n}</b><div className="vx-review-meta"><Stars n={rv.r} /> <span>{rv.d}</span></div></div>
-            </div>
-            <p>{rv.t}</p>
-            {rv.pics?.length ? (
-              <div className="vx-review-pics">
-                {rv.pics.map((p) => <img key={p} src={`/images/reviews/${p}`} alt="Foto ulasan pembeli" loading="lazy" width="56" height="56" />)}
-              </div>
-            ) : null}
-          </article>
-        ))}
-      </div>
-      <div className="vx-swipe"><i className="fa-solid fa-arrows-left-right" /> Geser untuk ulasan lain</div>
-    </section>
-  );
-}
-
 /* ================= SECTION 5: Value stacking & perbandingan harga ================= */
 function EbookCover() {
   return (
@@ -361,10 +248,26 @@ function ValueStack() {
     { t: 'Paket Lengkap Clorismen', s: 'Perawatan 30 Hari — Lebih murah dari Official Store Marketplace', tag: 'HEMAT' },
     { t: `BONUS 1: E-Book ‘${VIP.ebookTitle}’`, s: `Senilai ${rp(VIP.ebookValue)}`, tag: 'GRATIS' },
     { t: 'BONUS 2: Akses Konsultasi Langsung dengan Ahli Kesehatan Kulit', s: 'Pendampingan setelah pembelian', tag: 'GRATIS' },
-    { t: 'Subsidi Gratis Ongkir & Layanan COD', s: 'Ongkir ditanggung, bisa bayar di tempat', tag: 'GRATIS' },
+    { t: 'Subsidi Gratis Ongkir', s: 'Ongkir ke seluruh Indonesia ditanggung', tag: 'GRATIS' },
   ];
+
+  // Meta: ViewContent saat pengunjung sampai ke penawaran
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !('IntersectionObserver' in window)) return undefined;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        track('ViewContent', { content_name: 'Paket VIP Clorismen', content_category: 'bundling', value: VIP_PKG.price, currency: 'IDR' });
+        io.disconnect();
+      }
+    }, { threshold: 0.15 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <section className="vx-sec vx-value">
+    <section className="vx-sec vx-value" ref={ref}>
       <Head kicker="Penawaran Khusus" sub="Nggak perlu cek harga ke Shopee atau TikTok Shop. Ini semua yang kamu dapat kalau pesan di halaman ini.">
         Marketplace vs <span className="vx-gold">Halaman VIP</span>
       </Head>
@@ -401,7 +304,7 @@ function ValueStack() {
           <ul>
             <li><i className="fa-solid fa-check" /> Bonus E-Book eksklusif</li>
             <li><i className="fa-solid fa-check" /> Konsultasi Ahli Kesehatan Kulit</li>
-            <li><i className="fa-solid fa-check" /> Gratis ongkir &amp; COD</li>
+            <li><i className="fa-solid fa-check" /> Gratis ongkir</li>
           </ul>
         </div>
         <div className="vx-compare-badge"><i className="fa-solid fa-tags" /> Hemat Puluhan Ribu + Dapat Semua Bonus</div>
@@ -414,136 +317,8 @@ function ValueStack() {
   );
 }
 
-/* ================= Pilih kecamatan (autocomplete RajaOngkir lewat BFF) ================= */
-const titleCase = (s = '') => s.toLowerCase()
-  .replace(/(^|[\s(/-])([a-z])/g, (m, a, b) => a + b.toUpperCase())
-  .replace(/\b(Dki|Di|Ntb|Ntt)\b/g, (m) => m.toUpperCase());
-
-function destParts(d) {
-  const kel = titleCase(d.subdistrict);
-  const kec = titleCase(d.district);
-  return {
-    top: kel && kel !== kec ? `Kel. ${kel}, Kec. ${kec}` : `Kec. ${kec}`,
-    bottom: [titleCase(d.city), titleCase(d.province)].filter(Boolean).join(', ') + (d.zip ? ` ${d.zip}` : ''),
-  };
-}
-
-function destText(d) {
-  if (!d) return '';
-  if (d.manual) return d.text.trim();
-  const p = destParts(d);
-  return `${p.top}, ${p.bottom}`;
-}
-
-function DestinationPicker({ inputRef, value, onChange, invalid }) {
-  const [q, setQ] = useState('');
-  const [list, setList] = useState([]);
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [active, setActive] = useState(-1);
-  const [failed, setFailed] = useState(false); // API tidak tersedia → izinkan isi manual
-  const boxRef = useRef(null);
-
-  useEffect(() => {
-    const term = q.trim();
-    if (value && !value.manual) return undefined;
-    if (term.length < 3 || failed) { setList([]); setLoading(false); return undefined; }
-    const ctrl = new AbortController();
-    setLoading(true);
-    const t = setTimeout(async () => {
-      try {
-        const rows = await api.searchDestinations(term, ctrl.signal);
-        setList(Array.isArray(rows) ? rows : []);
-        setActive(rows?.length ? 0 : -1);
-        setOpen(true);
-      } catch (e) {
-        if (e.name === 'AbortError' || ctrl.signal.aborted) return;
-        setFailed(true);
-        setList([]);
-      } finally {
-        if (!ctrl.signal.aborted) setLoading(false);
-      }
-    }, 320);
-    return () => { clearTimeout(t); ctrl.abort(); };
-  }, [q, value, failed]);
-
-  useEffect(() => {
-    const close = (e) => { if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('pointerdown', close);
-    return () => document.removeEventListener('pointerdown', close);
-  }, []);
-
-  const pick = (d) => { onChange(d); setOpen(false); setQ(''); setList([]); };
-  const clear = () => { onChange(null); setQ(''); setTimeout(() => inputRef.current?.focus(), 0); };
-
-  const onKey = (e) => {
-    if (!open || !list.length) return;
-    if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => (a + 1) % list.length); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => (a - 1 + list.length) % list.length); }
-    else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); pick(list[active]); }
-    else if (e.key === 'Escape') setOpen(false);
-  };
-
-  if (value && !value.manual) {
-    const p = destParts(value);
-    return (
-      <div className="vx-dest-picked">
-        <i className="fa-solid fa-location-dot" />
-        <div><b>{p.top}</b><span>{p.bottom}</span></div>
-        <button type="button" onClick={clear} ref={inputRef}>Ganti</button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="vx-dest" ref={boxRef}>
-      <div className="vx-dest-inp">
-        <i className="fa-solid fa-magnifying-glass" />
-        <input
-          ref={inputRef}
-          id="vxDest"
-          className={`vx-inp${invalid ? ' is-bad' : ''}`}
-          role="combobox"
-          aria-expanded={open}
-          aria-controls="vxDestList"
-          aria-autocomplete="list"
-          autoComplete="off"
-          placeholder={failed ? 'Ketik kecamatan, kota, dan kode pos' : 'Ketik nama kecamatan, contoh: Menteng'}
-          value={failed ? (value?.text || q) : q}
-          onChange={(e) => {
-            setQ(e.target.value);
-            if (failed) onChange(e.target.value.trim() ? { manual: true, text: e.target.value } : null);
-          }}
-          onFocus={() => { if (list.length) setOpen(true); }}
-          onKeyDown={onKey}
-        />
-        {loading ? <i className="fa-solid fa-spinner fa-spin vx-dest-spin" /> : null}
-      </div>
-      {failed ? <small className="vx-hint">Pencarian otomatis sedang tidak tersedia, silakan ketik manual.</small>
-        : q.trim().length > 0 && q.trim().length < 3 ? <small className="vx-hint">Ketik minimal 3 huruf.</small> : null}
-      {open && !failed && q.trim().length >= 3 && !loading ? (
-        <ul className="vx-dest-list" id="vxDestList" role="listbox">
-          {list.length ? list.map((d, i) => {
-            const p = destParts(d);
-            return (
-              <li key={d.id} role="option" aria-selected={i === active} className={i === active ? 'is-active' : ''}
-                onPointerDown={(e) => { e.preventDefault(); pick(d); }} onMouseEnter={() => setActive(i)}>
-                <b>{p.top}</b><span>{p.bottom}</span>
-              </li>
-            );
-          }) : <li className="vx-dest-empty">Kecamatan tidak ditemukan. Coba ejaan lain atau nama kota.</li>}
-        </ul>
-      ) : null}
-    </div>
-  );
-}
-
 /* ================= SECTION 6: Pilihan paket & form pemesanan ================= */
-const PAYS = [
-  { id: 'online', label: 'QRIS / Virtual Account', sub: 'Konfirmasi otomatis', badge: 'Prioritas Kirim & Bebas Biaya Admin', icon: 'fa-qrcode' },
-  { id: 'cod', label: 'COD (Bayar di Tempat)', sub: 'Bayar ke kurir saat paket tiba', icon: 'fa-hand-holding-dollar' },
-];
-
+// Pembayaran hanya lewat Midtrans (QRIS / Virtual Account). COD sudah dihapus.
 function Checkout({ onResult }) {
   const defaultIdx = Math.max(0, VIP.packages.findIndex((p) => p.hot));
   const [pkgIdx, setPkgIdx] = useState(defaultIdx);
@@ -552,7 +327,6 @@ function Checkout({ onResult }) {
   const [wa, setWa] = useState('');
   const [addr, setAddr] = useState('');
   const [dest, setDest] = useState(null); // { id, label, ... } dari RajaOngkir, atau { manual: true, text }
-  const [pay, setPay] = useState('online');
   const [bad, setBad] = useState({});
   const [busy, setBusy] = useState(false);
   const refs = { name: useRef(null), wa: useRef(null), addr: useRef(null), dest: useRef(null) };
@@ -597,7 +371,7 @@ function Checkout({ onResult }) {
     e.preventDefault();
     if (busy) return;
     const digits = wa.replace(/\D/g, '');
-    const destOk = !!dest && (dest.manual ? dest.text.trim().length >= 5 : !!dest.id);
+    const destOk = destValid(dest);
     const v = { name: name.trim().length >= 2, wa: /^(0|62|8)\d{8,13}$/.test(digits), addr: addr.trim().length >= 8, dest: destOk };
     const nextBad = { name: !v.name, wa: !v.wa, addr: !v.addr, dest: !v.dest };
     setBad(nextBad);
@@ -610,7 +384,7 @@ function Checkout({ onResult }) {
     // Catatan pesanan (maks 300 karakter di ERP): alamat jalan + wilayah RajaOngkir + info paket/pembayaran
     const area = destText(dest);
     const bumpNote = bump && !VIP.bump.slug ? `+ ${VIP.bump.name} (${rp(VIP.bump.price)}, konfirmasi admin)` : '';
-    const meta = [area, 'VIP Page', pkg.name, bumpNote, `Bayar: ${pay === 'cod' ? 'COD' : 'QRIS/VA'}`].filter(Boolean).join(' | ');
+    const meta = [area, 'VIP Page', pkg.name, bumpNote, 'Bayar: QRIS/VA'].filter(Boolean).join(' | ');
     const room = 300 - meta.length - 3;
     const note = room > 10 ? `${addr.trim().slice(0, room)} | ${meta}` : `${addr.trim()} | ${area}`.slice(0, 300);
     const fullAddr = `${addr.trim()}, ${area}`;
@@ -622,7 +396,7 @@ function Checkout({ onResult }) {
       `Halo admin Clorismen, saya mau order *${pkg.name}* (halaman VIP)\n\n` +
       `Nama: ${name.trim()}\nWhatsApp: ${wa.trim()}\nAlamat: ${fullAddr}\n\n` +
       `Paket: ${pkg.name} (${rp(pkg.price)})\n` + (bump ? `+ ${VIP.bump.name} (${rp(VIP.bump.price)})\n` : '') +
-      `Pembayaran: ${pay === 'cod' ? 'COD' : 'QRIS / Virtual Account'}`,
+      'Pembayaran: QRIS / Virtual Account',
     );
 
     try {
@@ -631,7 +405,6 @@ function Checkout({ onResult }) {
         customer: { name: name.trim().slice(0, 80), phone: wa.trim().slice(0, 30), note, source_url: window.location.href.slice(0, 250) },
       });
       const base = { code: data.code, total: data.total, waUrl: data.whatsapp_url || waFallback };
-      if (pay === 'cod') return finish('cod', base);
       if (data.snap_token && data.client_key && data.snap_js_url) {
         try { await runSnap(data); return undefined; } catch {
           if (data.redirect_url) { window.location.href = data.redirect_url; return undefined; }
@@ -651,100 +424,98 @@ function Checkout({ onResult }) {
       <Head kicker="Form Pemesanan">Amankan <span className="vx-gold">Paket VIP</span> Kamu</Head>
 
       <form className="vx-form vx-glass" noValidate onSubmit={submit} onFocus={startCheckout}>
-        <div className="vx-step"><span>1</span> Pilih paket</div>
-        <div className="vx-pkgs" role="radiogroup" aria-label="Pilihan paket">
-          {VIP.packages.map((p, i) => (
-            <label key={p.id} className={`vx-pkg${pkgIdx === i ? ' is-on' : ''}${p.hot ? ' is-hot' : ''}`}>
-              <input type="radio" name="pkg" checked={pkgIdx === i} onChange={() => setPkgIdx(i)} />
-              {p.hot ? <span className="vx-ribbon"><i className="fa-solid fa-fire" /> PALING LARIS</span> : null}
-              <span className="vx-radio" />
-              <div className="vx-pkg-main">
-                <b>{p.name}</b>
-                <span className="vx-muted">{p.desc}</span>
-                <ul>{p.perks.map((x) => <li key={x}><i className="fa-solid fa-check" /> {x}</li>)}</ul>
-              </div>
-              <div className="vx-pkg-price">
-                <s>{rp(p.marketplace)}</s>
-                <b>{rp(p.price)}</b>
-              </div>
-            </label>
-          ))}
-        </div>
-
-        <div className="vx-step"><span>2</span> Data pengiriman</div>
-        <div className="vx-field">
-          <label htmlFor="vxName">Nama Lengkap</label>
-          <input ref={refs.name} id="vxName" className={`vx-inp${err('name')}`} autoComplete="name" placeholder="Contoh: Andika Pratama" value={name} onChange={(e) => setName(e.target.value)} />
-          {bad.name ? <small className="vx-err">Isi nama lengkap penerima.</small> : null}
-        </div>
-        <div className="vx-field">
-          <label htmlFor="vxWa">Nomor WhatsApp Aktif</label>
-          <input ref={refs.wa} id="vxWa" className={`vx-inp${err('wa')}`} type="tel" inputMode="numeric" autoComplete="tel" placeholder="08xxxxxxxxxx" value={wa}
-            onChange={(e) => setWa(e.target.value.replace(/[^\d+]/g, '').slice(0, 16))} />
-          {bad.wa ? <small className="vx-err">Nomor WhatsApp belum valid (contoh 081234567890).</small> : <small className="vx-hint">Untuk konfirmasi pesanan, resi, dan bonus.</small>}
-        </div>
-        <div className="vx-field">
-          <label htmlFor="vxDest">Kecamatan / Kota</label>
-          <DestinationPicker inputRef={refs.dest} value={dest} onChange={setDest} invalid={!!bad.dest} />
-          {bad.dest ? <small className="vx-err">Ketik lalu pilih kecamatan dari daftar.</small> : null}
-        </div>
-        <div className="vx-field">
-          <label htmlFor="vxAddr">Alamat Lengkap</label>
-          <textarea ref={refs.addr} id="vxAddr" className={`vx-inp${err('addr')}`} rows="2" autoComplete="street-address" maxLength={180}
-            placeholder="Nama jalan, nomor rumah, RT/RW, patokan" value={addr} onChange={(e) => setAddr(e.target.value)} />
-          {bad.addr ? <small className="vx-err">Isi nama jalan dan nomor rumah.</small> : null}
-        </div>
-
-        <div className="vx-step"><span>3</span> Metode pembayaran</div>
-        <div className="vx-pays">
-          {PAYS.map((p) => (
-            <label key={p.id} className={`vx-pay${pay === p.id ? ' is-on' : ''}`}>
-              <input type="radio" name="pay" checked={pay === p.id} onChange={() => setPay(p.id)} />
-              <span className="vx-pay-ic"><i className={`fa-solid ${p.icon}`} /></span>
-              <div>
-                <b>{p.label}</b>
-                <span className="vx-muted">{p.sub}</span>
-                {p.badge ? <em>{p.badge}</em> : null}
-              </div>
-              <span className="vx-radio" />
-            </label>
-          ))}
-        </div>
-
-        <label className={`vx-bump${bump ? ' is-on' : ''}`}>
-          <input type="checkbox" checked={bump} onChange={(e) => setBump(e.target.checked)} />
-          <span className="vx-check"><i className="fa-solid fa-check" /></span>
-          <img src={VIP.bump.img} alt="" width="36" height="110" loading="lazy" />
-          <span className="vx-bump-txt">
-            <b>Ya! Tambahkan {VIP.bump.name}</b>
-            <span>hanya tambah <b className="vx-goldtxt">{rp(VIP.bump.price)}</b> <s>{rp(VIP.bump.normal)}</s> <em>Hemat {bumpPct}%</em></span>
-          </span>
-        </label>
-
-        <div className="vx-summary">
-          <div className="vx-sum-title"><i className="fa-solid fa-receipt" /> Ringkasan pesanan</div>
-          <div className="vx-sum-row"><span>{pkg.name}</span><span>{rp(pkg.price)}</span></div>
-          {bump ? <div className="vx-sum-row vx-pop"><span>{VIP.bump.name}</span><span>{rp(VIP.bump.price)}</span></div> : null}
-          <div className="vx-sum-row"><span>Bonus E-Book</span><span className="vx-free">GRATIS</span></div>
-          {pkg.hot ? <div className="vx-sum-row"><span>Konsultasi Ahli Kesehatan Kulit</span><span className="vx-free">GRATIS</span></div> : null}
-          <div className="vx-sum-row"><span>Ongkos kirim</span><span className="vx-free">GRATIS</span></div>
-          <div className="vx-sum-total">
-            <span>Total bayar</span>
-            <div><s>{rp(normalTotal)}</s><b key={total} className="vx-pop">{rp(total)}</b></div>
+        <div className="vx-form-main">
+          <div className="vx-step"><span>1</span> Pilih paket</div>
+          <div className="vx-pkgs" role="radiogroup" aria-label="Pilihan paket">
+            {VIP.packages.map((p, i) => (
+              <label key={p.id} className={`vx-pkg${pkgIdx === i ? ' is-on' : ''}${p.hot ? ' is-hot' : ''}`}>
+                <input type="radio" name="pkg" checked={pkgIdx === i} onChange={() => setPkgIdx(i)} />
+                {p.hot ? <span className="vx-ribbon"><i className="fa-solid fa-fire" /> PALING LARIS</span> : null}
+                <span className="vx-radio" />
+                <div className="vx-pkg-main">
+                  <b>{p.name}</b>
+                  <span className="vx-muted">{p.desc}</span>
+                  <ul>{p.perks.map((x) => <li key={x}><i className="fa-solid fa-check" /> {x}</li>)}</ul>
+                </div>
+                <div className="vx-pkg-price">
+                  <s>{rp(p.marketplace)}</s>
+                  <b>{rp(p.price)}</b>
+                </div>
+              </label>
+            ))}
           </div>
+
+          <div className="vx-step"><span>2</span> Data pengiriman</div>
+          <div className="vx-field">
+            <label htmlFor="vxName">Nama Lengkap</label>
+            <input ref={refs.name} id="vxName" className={`vx-inp${err('name')}`} autoComplete="name" placeholder="Contoh: Andika Pratama" value={name} onChange={(e) => setName(e.target.value)} />
+            {bad.name ? <small className="vx-err">Isi nama lengkap penerima.</small> : null}
+          </div>
+          <div className="vx-field">
+            <label htmlFor="vxWa">Nomor WhatsApp Aktif</label>
+            <input ref={refs.wa} id="vxWa" className={`vx-inp${err('wa')}`} type="tel" inputMode="numeric" autoComplete="tel" placeholder="08xxxxxxxxxx" value={wa}
+              onChange={(e) => setWa(e.target.value.replace(/[^\d+]/g, '').slice(0, 16))} />
+            {bad.wa ? <small className="vx-err">Nomor WhatsApp belum valid (contoh 081234567890).</small> : <small className="vx-hint">Untuk konfirmasi pesanan, resi, dan bonus.</small>}
+          </div>
+          <div className="vx-field">
+            <label htmlFor="vxDest">Kecamatan / Kota</label>
+            <DestinationPicker id="vxDest" theme="light" inputClassName="vx-inp" inputRef={refs.dest} value={dest} onChange={setDest} invalid={!!bad.dest} />
+            {bad.dest ? <small className="vx-err">Ketik lalu pilih kecamatan dari daftar.</small> : null}
+          </div>
+          <div className="vx-field">
+            <label htmlFor="vxAddr">Alamat Lengkap</label>
+            <textarea ref={refs.addr} id="vxAddr" className={`vx-inp${err('addr')}`} rows="2" autoComplete="street-address" maxLength={180}
+              placeholder="Nama jalan, nomor rumah, RT/RW, patokan" value={addr} onChange={(e) => setAddr(e.target.value)} />
+            {bad.addr ? <small className="vx-err">Isi nama jalan dan nomor rumah.</small> : null}
+          </div>
+
+          <div className="vx-step"><span>3</span> Metode pembayaran</div>
+          <div className="vx-pay is-on is-single">
+            <span className="vx-pay-ic"><i className="fa-solid fa-qrcode" /></span>
+            <div>
+              <b>QRIS / Virtual Account</b>
+              <span className="vx-muted">Bayar lewat Midtrans, konfirmasi otomatis</span>
+              <span className="vx-pay-logos">QRIS · BCA · Mandiri · BNI · BRI · dan lainnya</span>
+            </div>
+            <i className="fa-solid fa-circle-check vx-pay-ok" />
+          </div>
+
+          <label className={`vx-bump${bump ? ' is-on' : ''}`}>
+            <input type="checkbox" checked={bump} onChange={(e) => setBump(e.target.checked)} />
+            <span className="vx-check"><i className="fa-solid fa-check" /></span>
+            <img src={VIP.bump.img} alt="" width="36" height="110" loading="lazy" />
+            <span className="vx-bump-txt">
+              <b>Ya! Tambahkan {VIP.bump.name}</b>
+              <span>hanya tambah <b className="vx-goldtxt">{rp(VIP.bump.price)}</b> <s>{rp(VIP.bump.normal)}</s> <em>Hemat {bumpPct}%</em></span>
+            </span>
+          </label>
         </div>
+        <div className="vx-form-side">
+          <div className="vx-summary">
+            <div className="vx-sum-title"><i className="fa-solid fa-receipt" /> Ringkasan pesanan</div>
+            <div className="vx-sum-row"><span>{pkg.name}</span><span>{rp(pkg.price)}</span></div>
+            {bump ? <div className="vx-sum-row vx-pop"><span>{VIP.bump.name}</span><span>{rp(VIP.bump.price)}</span></div> : null}
+            <div className="vx-sum-row"><span>Bonus E-Book</span><span className="vx-free">GRATIS</span></div>
+            {pkg.hot ? <div className="vx-sum-row"><span>Konsultasi Ahli Kesehatan Kulit</span><span className="vx-free">GRATIS</span></div> : null}
+            <div className="vx-sum-row"><span>Ongkos kirim</span><span className="vx-free">GRATIS</span></div>
+            <div className="vx-sum-total">
+              <span>Total bayar</span>
+              <div><s>{rp(normalTotal)}</s><b key={total} className="vx-pop">{rp(total)}</b></div>
+            </div>
+          </div>
 
-        {VIP.slotsLeft ? (
-          <div className="vx-scarcity"><span className="vx-live" /><span>⚠️ Kuota Konsultasi Ahli Kesehatan Kulit &amp; Bonus E-Book hari ini tersisa <b>{VIP.slotsLeft} slot</b>.</span></div>
-        ) : null}
+          {VIP.slotsLeft ? (
+            <div className="vx-scarcity"><span className="vx-live" /><span>⚠️ Kuota Konsultasi Ahli Kesehatan Kulit &amp; Bonus E-Book hari ini tersisa <b>{VIP.slotsLeft} slot</b>.</span></div>
+          ) : null}
 
-        <button type="submit" className="vx-btn vx-btn-gold vx-btn-xl vx-btn-block" disabled={busy}>
-          {busy ? <><i className="fa-solid fa-spinner fa-spin" /> Memproses…</> : <>PESAN SEKARANG &amp; AMANKAN BONUSNYA 🔒</>}
-        </button>
-        <div className="vx-secure">
-          <span><i className="fa-solid fa-lock" /> Data aman</span>
-          <span><i className="fa-solid fa-truck-fast" /> Gratis ongkir</span>
-          <span><i className="fa-brands fa-whatsapp" /> Admin siap bantu</span>
+          <button type="submit" className="vx-btn vx-btn-gold vx-btn-xl vx-btn-block" disabled={busy}>
+            {busy ? <><i className="fa-solid fa-spinner fa-spin" /> Memproses…</> : <>PESAN SEKARANG &amp; AMANKAN BONUSNYA 🔒</>}
+          </button>
+          <div className="vx-secure">
+            <span><i className="fa-solid fa-lock" /> Data aman</span>
+            <span><i className="fa-solid fa-truck-fast" /> Gratis ongkir</span>
+            <span><i className="fa-brands fa-whatsapp" /> Admin siap bantu</span>
+          </div>
         </div>
       </form>
     </section>
@@ -810,9 +581,9 @@ function ThankYou({ result, onClose }) {
 /* ================= SECTION 7: FAQ (accordion) & garansi ================= */
 const FAQ = [
   { q: 'Apakah produknya aman dan terdaftar BPOM?', a: 'Ya. Seluruh produk dalam paket adalah kosmetik perawatan kulit yang terdaftar BPOM. Nomor registrasinya tercantum di kemasan dan di bagian bawah halaman ini.' },
-  { q: 'Bagaimana cara klaim Bonus E-Book & Konsultasi Ahli Kesehatan Kulit?', a: 'Setelah pembayaran QRIS / Virtual Account terkonfirmasi, tombol download E-Book muncul di halaman konfirmasi dan link-nya juga dikirim lewat WhatsApp. Untuk Paket VIP Komplit, tombol Konsultasi muncul di halaman konfirmasi dan pesannya sudah berisi nomor order kamu. Untuk COD, bonus dikirim setelah pesanan dikonfirmasi admin.' },
+  { q: 'Bagaimana cara klaim Bonus E-Book & Konsultasi Ahli Kesehatan Kulit?', a: 'Setelah pembayaran QRIS / Virtual Account terkonfirmasi, tombol download E-Book muncul di halaman konfirmasi dan link-nya juga dikirim lewat WhatsApp. Untuk Paket VIP Komplit, tombol Konsultasi muncul di halaman konfirmasi dan pesannya sudah berisi nomor order kamu.' },
   { q: 'Berapa lama estimasi pengiriman?', a: 'Pesanan diproses di hari kerja. Lama pengiriman mengikuti lokasi dan kurir. Nomor resi dikirim lewat WhatsApp setelah paket diserahkan ke kurir.' },
-  { q: 'Bagaimana ketentuan pembayaran COD / Transfer?', a: 'QRIS / Virtual Account terkonfirmasi otomatis dan diprioritaskan pengirimannya, tanpa biaya admin. COD dibayar langsung ke kurir saat paket tiba; admin akan mengonfirmasi pesanan COD lewat WhatsApp terlebih dahulu.' },
+  { q: 'Pembayarannya bisa pakai apa?', a: 'Pembayaran lewat Midtrans: QRIS (semua e-wallet & m-banking) atau Virtual Account bank (BCA, Mandiri, BNI, BRI, dan lainnya). Konfirmasi otomatis, jadi pesanan langsung diproses setelah lunas.' },
 ];
 
 function Faq() {
@@ -858,7 +629,7 @@ const POLICY = {
     body: [
       'Harga dan bonus di halaman ini berlaku untuk pemesanan melalui halaman ini selama promo berlangsung dan dapat berubah sewaktu-waktu.',
       'Konsultasi Ahli Kesehatan Kulit bersifat edukasi perawatan kulit dan bukan pengganti pemeriksaan medis.',
-      'Pesanan COD wajib dikonfirmasi lewat WhatsApp sebelum dikirim. Pesanan dengan data tidak lengkap dapat dibatalkan.',
+      'Pembayaran dilakukan lewat QRIS / Virtual Account (Midtrans). Pesanan dengan data tidak lengkap dapat dibatalkan.',
     ],
   },
 };
@@ -942,7 +713,7 @@ export default function VipPage() {
       if (!m) { m = document.createElement('meta'); m.setAttribute('name', name); document.head.appendChild(m); }
       m.setAttribute('content', content);
     };
-    setMeta('description', 'Paket Lengkap Perawatan Pria Clorismen 30 hari dengan harga khusus member VIP, bonus E-Book eksklusif, konsultasi Ahli Kesehatan Kulit, gratis ongkir & bisa COD.');
+    setMeta('description', 'Paket Lengkap Perawatan Pria Clorismen 30 hari dengan harga khusus member VIP, bonus E-Book eksklusif, konsultasi Ahli Kesehatan Kulit, gratis ongkir.');
     setMeta('theme-color', '#121C26');
     const pre = document.createElement('link');
     pre.rel = 'preload'; pre.as = 'image'; pre.href = IMG.bundle;
@@ -958,7 +729,6 @@ export default function VipPage() {
       <main className="vx-shell">
         <Hero />
         <Education />
-        <SocialProof />
         <ValueStack />
         <Checkout onResult={setResult} />
         <Faq />

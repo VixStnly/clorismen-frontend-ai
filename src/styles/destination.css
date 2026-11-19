@@ -1,0 +1,48 @@
+/* DestinationPicker — autocomplete kecamatan RajaOngkir (landing utama: dp-dark, halaman VIP: dp-light) */
+.dp { position: relative; }
+.dp-inp { position: relative; }
+.dp-inp > .dp-ic { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 14px; pointer-events: none; opacity: .6; }
+.dp-inp input { padding-left: 42px !important; padding-right: 40px !important; }
+.dp-spin { position: absolute; right: 16px; top: 50%; margin-top: -7px; }
+.dp-hint { display: block; margin-top: 6px; font-size: 13px; opacity: .75; }
+.dp-list { list-style: none; margin: 0; position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 6px); max-height: 280px; overflow-y: auto; padding: 6px; border-radius: 14px; animation: dpPop .22s cubic-bezier(.2, .8, .2, 1); }
+.dp-list li { padding: 10px 12px; border-radius: 10px; cursor: pointer; line-height: 1.3; }
+.dp-list li b { display: block; font-size: 14.5px; }
+.dp-list li span { font-size: 13px; }
+.dp-list li.dp-empty { cursor: default; font-size: 14px; }
+.dp-picked { display: grid; grid-template-columns: 20px 1fr auto; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 14px; animation: dpPop .3s cubic-bezier(.2, .8, .2, 1); }
+.dp-picked b { display: block; font-size: 15px; line-height: 1.3; }
+.dp-picked span { font-size: 13px; }
+.dp-picked button { padding: 7px 12px; border-radius: 999px; font-size: 13px; font-weight: 800; cursor: pointer; }
+@keyframes dpPop { 0% { transform: scale(.96); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+/* Tema terang (halaman VIP) */
+.dp-light .dp-ic { color: #8a95a6; opacity: 1; }
+.dp-light .dp-spin { color: #a87414; }
+.dp-light .dp-hint { color: #8a95a6; opacity: 1; }
+.dp-light .dp-list { background: #fff; border: 1px solid #e6eaf0; box-shadow: 0 20px 44px -16px rgba(15, 27, 45, .35); }
+.dp-light .dp-list li b { color: #0f1b2d; }
+.dp-light .dp-list li span, .dp-light .dp-list li.dp-empty { color: #5d6b80; }
+.dp-light .dp-list li.is-active { background: #fff6e0; }
+.dp-light .dp-picked { background: #fffaf0; border: 1.5px solid #d9a84e; }
+.dp-light .dp-picked > i { color: #a87414; }
+.dp-light .dp-picked b { color: #0f1b2d; }
+.dp-light .dp-picked span { color: #5d6b80; }
+.dp-light .dp-picked button { color: #a87414; background: #fff; border: 1px solid rgba(217, 168, 78, .6); }
+
+/* Tema gelap (landing utama) */
+.dp-dark .dp-ic { color: #8ea3c4; opacity: 1; }
+.dp-dark .dp-spin { color: #c8f250; }
+.dp-dark .dp-hint { color: #8ea3c4; opacity: 1; }
+.dp-dark .dp-list { background: #0b1830; border: 1px solid rgba(150, 200, 255, .2); box-shadow: 0 24px 50px -16px rgba(0, 0, 0, .8); }
+.dp-dark .dp-list li b { color: #eaf2ff; }
+.dp-dark .dp-list li span, .dp-dark .dp-list li.dp-empty { color: #8ea3c4; }
+.dp-dark .dp-list li.is-active { background: rgba(200, 242, 80, .12); }
+.dp-dark .dp-picked { background: rgba(200, 242, 80, .08); border: 1.5px solid rgba(200, 242, 80, .55); }
+.dp-dark .dp-picked > i { color: #c8f250; }
+.dp-dark .dp-picked b { color: #eaf2ff; }
+.dp-dark .dp-picked span { color: #8ea3c4; }
+.dp-dark .dp-picked button { color: #c8f250; background: transparent; border: 1px solid rgba(200, 242, 80, .5); }
+
+/* Landing utama: field yang sedang aktif di atas field berikutnya supaya dropdown tidak tertutup */
+.fg:focus-within { position: relative; z-index: 10; }

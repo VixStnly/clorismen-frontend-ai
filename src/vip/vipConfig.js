@@ -15,7 +15,7 @@ export const VIP = {
       desc: 'Perawatan 30 hari + Bonus E-Book',
       price: 199000,
       marketplace: 249000,                    // GANTI: harga Official Store marketplace
-      perks: ['Paket lengkap 30 hari', 'Bonus E-Book eksklusif', 'Gratis ongkir & bisa COD'],
+      perks: ['Paket lengkap 30 hari', 'Bonus E-Book eksklusif', 'Gratis ongkir'],
     },
     {
       id: 'vip',
@@ -25,7 +25,7 @@ export const VIP = {
       price: 279000,                          // GANTI
       marketplace: 359000,                    // GANTI
       hot: true,
-      perks: ['Paket lengkap 30 hari', 'Bonus E-Book eksklusif', 'Konsultasi langsung Ahli Kesehatan Kulit', 'Gratis ongkir & bisa COD'],
+      perks: ['Paket lengkap 30 hari', 'Bonus E-Book eksklusif', 'Konsultasi langsung Ahli Kesehatan Kulit', 'Gratis ongkir'],
     },
   ],
 
