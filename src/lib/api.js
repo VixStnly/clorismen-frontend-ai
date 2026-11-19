@@ -39,5 +39,6 @@ async function request(path, options = {}) {
 export const api = {
   createOrderIntent: (payload) => request('order-intents', { method: 'POST', body: JSON.stringify(payload) }),
   orderDetail: (code) => request(`order-intents/${encodeURIComponent(code)}`),
+  searchDestinations: (q, signal) => request(`destinations?q=${encodeURIComponent(q)}`, { signal }),
   verifyPayment: (code) => request(`order-intents/${encodeURIComponent(code)}/verify-payment`, { method: 'POST' }),
 };

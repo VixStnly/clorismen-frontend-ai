@@ -1,11 +1,17 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import './styles/landing.css';
-import './styles/checkout.css';
-import App from './App.jsx';
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+// Routing sederhana tanpa library: tiap halaman dimuat terpisah (CSS-nya juga terpisah).
+const path = window.location.pathname.replace(/\/+$/, '').toLowerCase();
+const load = path === '/vip-paket-clorismen'
+  ? import('./vip/VipPage.jsx')
+  : import('./LandingEntry.jsx');
+
+const root = createRoot(document.getElementById('root'));
+load.then(({ default: Page }) => {
+  root.render(
+    <StrictMode>
+      <Page />
+    </StrictMode>,
+  );
+});
