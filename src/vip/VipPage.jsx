@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api.js';
 import { loadMidtransSnap } from '../lib/midtrans.js';
 import DestinationPicker, { destText, destValid } from '../components/DestinationPicker.jsx';
+import { REVIEWS } from '../data.js';
 import { VIP, rp, waUrl } from './vipConfig.js';
 import { initPixel, track } from './pixel.js';
 import './vip.css';
@@ -246,6 +247,37 @@ function EbookCover() {
   );
 }
 
+/* ================= SECTION 4: Ulasan pembeli (komentar asli dari marketplace) ================= */
+function Stars({ n = 5 }) {
+  return <span className="vx-stars" aria-label={`${n} dari 5 bintang`}>{Array.from({ length: 5 }, (_, i) => <i key={i} className={`fa-solid fa-star${i < Math.round(n) ? '' : ' off'}`} />)}</span>;
+}
+
+function BuyerReviews() {
+  const list = REVIEWS.slice(0, 6);
+  return (
+    <section className="vx-sec vx-proof">
+      <Head kicker="Review Pembeli" sub="Ulasan asli dari pembeli di marketplace, nama disamarkan.">Kata Mereka yang <span className="vx-gold">Sudah Pakai</span></Head>
+      <div className="vx-reviews">
+        {list.map((rv) => (
+          <article key={rv.n + rv.d} className="vx-review vx-glass">
+            <div className="vx-review-top">
+              <div className="vx-avatar sm">{rv.n.charAt(0).toUpperCase()}</div>
+              <div><b>{rv.n}</b><div className="vx-review-meta"><Stars n={rv.r} /> <span>{rv.d}</span></div></div>
+            </div>
+            <p>{rv.t}</p>
+            {rv.pics?.length ? (
+              <div className="vx-review-pics">
+                {rv.pics.map((p) => <img key={p} src={`/images/reviews/${p}`} alt="Foto ulasan pembeli" loading="lazy" decoding="async" width="56" height="56" />)}
+              </div>
+            ) : null}
+          </article>
+        ))}
+      </div>
+      <div className="vx-swipe"><i className="fa-solid fa-arrows-left-right" /> Geser untuk ulasan lain</div>
+    </section>
+  );
+}
+
 function ValueStack() {
   const items = [
     { t: 'Paket Lengkap Clorismen', s: 'Perawatan 30 Hari — Lebih murah dari Official Store Marketplace', tag: 'HEMAT' },
@@ -471,7 +503,8 @@ function Checkout({ onResult }) {
               placeholder="Nama jalan, nomor rumah, RT/RW, patokan" value={addr} onChange={(e) => setAddr(e.target.value)} />
             {bad.addr ? <small className="vx-err">Isi nama jalan dan nomor rumah.</small> : null}
           </div>
-
+        </div>
+        <div className="vx-form-side">
           <div className="vx-step"><span>3</span> Metode pembayaran</div>
           <div className="vx-pay is-on is-single">
             <span className="vx-pay-ic"><i className="fa-solid fa-qrcode" /></span>
@@ -492,8 +525,7 @@ function Checkout({ onResult }) {
               <span>hanya tambah <b className="vx-goldtxt">{rp(VIP.bump.price)}</b> <s>{rp(VIP.bump.normal)}</s> <em>Hemat {bumpPct}%</em></span>
             </span>
           </label>
-        </div>
-        <div className="vx-form-side">
+
           <div className="vx-summary">
             <div className="vx-sum-title"><i className="fa-solid fa-receipt" /> Ringkasan pesanan</div>
             <div className="vx-sum-row"><span>{pkg.name}</span><span>{rp(pkg.price)}</span></div>
@@ -732,6 +764,7 @@ export default function VipPage() {
       <main className="vx-shell">
         <Hero />
         <Education />
+        <BuyerReviews />
         <ValueStack />
         <Checkout onResult={setResult} />
         <Faq />
