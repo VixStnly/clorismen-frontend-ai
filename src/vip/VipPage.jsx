@@ -628,13 +628,17 @@ function Faq() {
       <Head kicker="Tanya Jawab">Pertanyaan yang <span className="vx-gold">Sering Ditanya</span></Head>
       <div className="vx-faq">
         {FAQ.map((f, i) => (
-          <div key={f.q} className={`vx-faq-item${open === i ? ' is-open' : ''}`} data-rv style={{ '--d': `${i * 0.06}s` }}>
-            <button type="button" aria-expanded={open === i} onClick={() => setOpen(open === i ? -1 : i)}>
-              <span className="vx-faq-no">0{i + 1}</span>
-              <span className="vx-faq-q">{f.q}</span>
-              <i className="fa-solid fa-plus" />
-            </button>
-            <div className="vx-faq-a"><div><p>{f.a}</p></div></div>
+          // Animasi muncul dipasang di pembungkus: className item berubah saat dibuka/tutup,
+          // dan kalau kelas animasi ada di elemen yang sama, React menghapusnya → item jadi tak terlihat.
+          <div key={f.q} data-rv style={{ '--d': `${i * 0.06}s` }}>
+            <div className={`vx-faq-item${open === i ? ' is-open' : ''}`}>
+              <button type="button" aria-expanded={open === i} onClick={() => setOpen(open === i ? -1 : i)}>
+                <span className="vx-faq-no">0{i + 1}</span>
+                <span className="vx-faq-q">{f.q}</span>
+                <i className="fa-solid fa-plus" />
+              </button>
+              <div className="vx-faq-a"><div><p>{f.a}</p></div></div>
+            </div>
           </div>
         ))}
       </div>
