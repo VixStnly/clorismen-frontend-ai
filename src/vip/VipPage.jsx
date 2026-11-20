@@ -7,6 +7,7 @@ import { VIP, rp, waUrl } from './vipConfig.js';
 import { initPixel, track } from './pixel.js';
 import { takePaymentReturn, confirmPaymentReturn } from '../lib/paymentReturn.js';
 import { useWaNumber } from '../lib/waNumber.js';
+import PurchaseToast from '../components/PurchaseToast.jsx';
 import './vip.css';
 
 /* Aset glossy hasil generate ulang: tools/make_vip_lux_images.py → images/vip-lux/ */
@@ -706,11 +707,15 @@ function Footer({ onPolicy }) {
         <ul>{VIP.legal.bpom.map((b) => <li key={b.name}><span>{b.name}</span><span>{b.no}</span></li>)}</ul>
       </div>
       <div className="vx-footer-links">
-        <button type="button" onClick={() => onPolicy('privacy')}>Kebijakan Privasi</button>
+        <a href="/faq">FAQ</a>
         <span>·</span>
-        <button type="button" onClick={() => onPolicy('terms')}>Syarat &amp; Ketentuan</button>
+        <a href="/refund-policy">Kebijakan Refund</a>
         <span>·</span>
-        <a href={waUrl('Halo admin Clorismen')} target="_blank" rel="noopener">Kontak</a>
+        <a href="/terms-and-conditions">Syarat &amp; Ketentuan</a>
+        <span>·</span>
+        <a href="/privacy-policy">Kebijakan Privasi</a>
+        <span>·</span>
+        <a href="/kontak">Kontak</a>
       </div>
       <p className="vx-disclaimer">
         Hasil pemakaian dapat bervariasi pada setiap individu tergantung jenis kulit dan keteraturan penggunaan.
@@ -797,6 +802,7 @@ export default function VipPage() {
         <Footer onPolicy={setPolicy} />
       </main>
       <StickyCta />
+      <PurchaseToast theme="light" lift />
       <ThankYou result={result} onClose={() => setResult(null)} />
       <PolicyModal id={policy} onClose={() => setPolicy(null)} />
     </div>

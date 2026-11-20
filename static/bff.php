@@ -73,6 +73,7 @@ $routes = [
     ['GET', '#^products$#', 'products', 30],
     ['GET', '#^products/([a-z0-9-]{1,120})$#', 'products/%s', 30],
     ['GET', '#^reviews$#', 'reviews', 120],
+    ['GET', '#^recent-purchases$#', 'recent-purchases', 20], // notifikasi pembeli terbaru; cache pendek supaya order web baru cepat muncul
     ['GET', '#^destinations$#', 'destinations', 86400], // autocomplete kecamatan (RajaOngkir), cache per kata kunci
     ['POST', '#^order-intents$#', 'order-intents', 0],
     ['GET', '#^order-intents/([A-Za-z0-9-]{4,24})$#', 'order-intents/%s', 0],

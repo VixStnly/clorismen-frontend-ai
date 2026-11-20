@@ -603,6 +603,9 @@ textarea.inp{min-height:96px;resize:vertical}
 footer{border-top:1px solid var(--line);padding:46px 0 120px;color:var(--dim);font-size:13.5px}
 footer .inner{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
 footer img{height:34px;width:auto;opacity:.85}
+footer .foot-links{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:18px}
+footer .foot-links a{color:var(--dim);text-decoration:none}
+footer .foot-links a:hover{color:#fff;text-decoration:underline}
 
 /* floating */
 .wa-fab{position:fixed;right:22px;bottom:24px;z-index:70;width:60px;height:60px;border-radius:50%;display:grid;place-items:center;font-size:28px;color:#fff;background:linear-gradient(180deg,#3ee67d,#1fb85a);box-shadow:0 14px 34px rgba(37,211,102,.45),inset 0 1px 0 rgba(255,255,255,.4)}

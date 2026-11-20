@@ -24,6 +24,7 @@ import FaqSection from './sections/FaqSection.jsx';
 import Order from './sections/Order.jsx';
 import Closing from './sections/Closing.jsx';
 import Footer from './sections/Footer.jsx';
+import PurchaseToast from './components/PurchaseToast.jsx';
 
 export default function App() {
   useGlobalEffects();
@@ -52,6 +53,7 @@ export default function App() {
       <Order />
       <Closing />
       <Footer />
+      <PurchaseToast theme="dark" />
     </OrderProvider>
   );
 }

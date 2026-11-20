@@ -1,0 +1,55 @@
+/* Selektor diawali html supaya tidak kalah oleh reset .vx * di vip.css */
+/* Notifikasi pembeli terbaru, kiri bawah. Dipakai landing utama (gelap) dan VIP (terang). */
+html .ptoast {
+  position: fixed; left: 18px; bottom: 22px; z-index: 64;
+  display: flex; align-items: center; gap: 12px;
+  width: min(340px, calc(100vw - 100px)); padding: 12px 34px 12px 12px; border-radius: 16px;
+  font: 400 13px/1.35 'Plus Jakarta Sans', system-ui, sans-serif;
+  opacity: 0; transform: translateY(16px) scale(.98); pointer-events: none;
+  transition: opacity .35s ease, transform .45s cubic-bezier(.2, .8, .2, 1);
+}
+html .ptoast.is-on { opacity: 1; transform: none; pointer-events: auto; }
+html .ptoast p { margin: 0; }
+html .ptoast b { font-weight: 800; }
+html .ptoast-ic { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 17px; }
+html .ptoast-tx { min-width: 0; }
+html .ptoast-prod { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html .ptoast-meta { font-size: 11.5px; margin-top: 2px; }
+html .ptoast-meta i { font-size: 10.5px; }
+html .ptoast-x { position: absolute; top: 6px; right: 8px; width: 24px; height: 24px; border: 0; background: none; font-size: 18px; line-height: 1; cursor: pointer; border-radius: 50%; }
+
+/* Gelap (landing utama) */
+html .ptoast-dark { background: rgba(8, 16, 30, .92); color: #e8eef7; border: 1px solid rgba(255, 255, 255, .1); box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .6); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+html .ptoast-dark .ptoast-ic { background: linear-gradient(180deg, #d4ff4f, #9fdc1c); color: #08101e; }
+html .ptoast-dark .ptoast-prod { color: #d4ff4f; }
+html .ptoast-dark .ptoast-meta { color: #8fa0b8; }
+html .ptoast-dark .ptoast-meta i { color: #3ee67d; }
+html .ptoast-dark .ptoast-x { color: #8fa0b8; }
+
+/* Terang (halaman VIP) */
+html .ptoast-light { background: rgba(255, 255, 255, .97); color: #121c26; border: 1px solid rgba(201, 162, 77, .45); box-shadow: 0 18px 40px -14px rgba(15, 27, 45, .35); }
+html .ptoast-light .ptoast-ic { background: linear-gradient(180deg, #f3d98b, #c9a24d); color: #121c26; }
+html .ptoast-light .ptoast-prod { color: #0f6b4f; }
+html .ptoast-light .ptoast-meta { color: #6b7686; }
+html .ptoast-light .ptoast-meta i { color: #1fb85a; }
+html .ptoast-light .ptoast-x { color: #8a94a3; }
+
+/* HP: kartu kecil ringkas (2 baris), tidak menutupi konten. Teks "baru saja membeli" dipendekkan jadi "beli". */
+html .ptoast-short { display: none; }
+@media (max-width: 760px) {
+  html .ptoast { left: 10px; bottom: 92px; width: auto; max-width: min(250px, calc(100vw - 90px)); gap: 8px; padding: 6px 30px 6px 6px; border-radius: 12px; font-size: 11.5px; line-height: 1.3; }
+  html .ptoast-ic { width: 28px; height: 28px; font-size: 12px; border-radius: 8px; }
+  html .ptoast-long { display: none; }
+  html .ptoast-short { display: inline; }
+  html .ptoast-prod { font-size: 11.5px; }
+  html .ptoast-meta { display: none; }
+  html .ptoast-x { top: 50%; right: 4px; transform: translateY(-50%); width: 20px; height: 20px; font-size: 15px; }
+}
+/* VIP: di atas bar sticky bawah */
+@media (max-width: 760px) {
+  html .ptoast-lift { bottom: 84px; }
+}
+@media (min-width: 961px) {
+  html .ptoast-lift { bottom: 96px; }
+}
+@media (prefers-reduced-motion: reduce) { html .ptoast { transition: opacity .2s; transform: none; } }

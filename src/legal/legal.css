@@ -1,0 +1,40 @@
+/* Halaman FAQ / kebijakan / kontak: sederhana, terang, mudah dibaca */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: #f6f7f9; color: #1b2430; font: 400 15.5px/1.7 'Plus Jakarta Sans', system-ui, sans-serif; }
+.lg a { color: #1478c8; }
+.lg-head { background: #0b1422; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px max(18px, calc((100% - 820px) / 2)); }
+.lg-logo img { display: block; height: 40px; width: auto; }
+.lg-back { color: #cfd8e3 !important; text-decoration: none; font-size: 13.5px; font-weight: 600; }
+.lg-back:hover { color: #fff !important; }
+.lg-nav { display: flex; gap: 6px; overflow-x: auto; padding: 12px max(18px, calc((100% - 820px) / 2)); background: #fff; border-bottom: 1px solid #e5e8ee; scrollbar-width: none; }
+.lg-nav::-webkit-scrollbar { display: none; }
+.lg-nav a { flex: none; padding: 7px 14px; border-radius: 999px; font-size: 13.5px; font-weight: 600; color: #4a5565 !important; text-decoration: none; border: 1px solid #e5e8ee; }
+.lg-nav a.on { background: #0b1422; border-color: #0b1422; color: #fff !important; }
+.lg-main { max-width: 820px; margin: 28px auto; padding: 28px 30px; background: #fff; border: 1px solid #e5e8ee; border-radius: 16px; }
+.lg-main h1 { margin: 0 0 6px; font: 800 26px/1.25 'Plus Jakarta Sans', sans-serif; color: #0b1422; }
+.lg-main h2 { margin: 26px 0 6px; font-size: 17px; font-weight: 800; color: #0b1422; }
+.lg-main p { margin: 8px 0; }
+.lg-main ul { margin: 6px 0; padding-left: 20px; }
+.lg-main li { margin: 4px 0; }
+.lg-upd { font-size: 13px; color: #6b7686; margin-top: 0 !important; }
+.lg-faq { margin-top: 18px; }
+.lg-faq details { border: 1px solid #e5e8ee; border-radius: 12px; margin: 10px 0; padding: 0 16px; background: #fafbfc; }
+.lg-faq summary { cursor: pointer; padding: 14px 0; font-weight: 700; color: #0b1422; list-style: none; position: relative; padding-right: 26px; }
+.lg-faq summary::-webkit-details-marker { display: none; }
+.lg-faq summary::after { content: '+'; position: absolute; right: 0; top: 10px; font-size: 22px; font-weight: 400; color: #6b7686; }
+.lg-faq details[open] summary::after { content: '–'; }
+.lg-faq details p { margin: 0 0 14px; color: #3d4756; }
+.lg-contact { display: grid; gap: 12px; margin-top: 18px; }
+.lg-contact > div { display: flex; gap: 14px; align-items: flex-start; padding: 16px; border: 1px solid #e5e8ee; border-radius: 12px; background: #fafbfc; }
+.lg-contact i { flex: none; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: #0b1422; color: #d4ff4f; font-size: 16px; }
+.lg-contact b { display: block; font-size: 13px; color: #6b7686; font-weight: 600; }
+.lg-contact a, .lg-contact span { font-weight: 700; color: #0b1422; word-break: break-word; }
+.lg-dim { color: #8a94a3 !important; font-weight: 500 !important; }
+.lg-foot { text-align: center; padding: 10px 18px 36px; font-size: 13.5px; color: #4a5565; }
+.lg-foot p { margin: 4px 0; }
+.lg-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; margin: 10px 0 !important; }
+@media (max-width: 640px) {
+  .lg-main { margin: 14px 10px; padding: 20px 18px; border-radius: 14px; }
+  .lg-main h1 { font-size: 22px; }
+  .lg-logo img { height: 34px; }
+}

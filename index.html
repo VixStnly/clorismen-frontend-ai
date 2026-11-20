@@ -11,7 +11,10 @@
 <script>
 (function () {
   var p = location.pathname.replace(/\/+$/, '').toLowerCase();
-  var L = p === '/vip-paket-clorismen'
+  var LEGAL = ['/faq', '/refund-policy', '/terms-and-conditions', '/privacy-policy', '/kontak'];
+  var L = LEGAL.indexOf(p) !== -1
+    ? [['/images/opt/logo-white.webp']]
+    : p === '/vip-paket-clorismen'
     ? [
         ['/images/opt/vip-hero-bundle.webp', '/images/opt/vip-hero-bundle-600.webp 600w, /images/opt/vip-hero-bundle.webp 1000w', '(min-width: 960px) 560px, 100vw'],
         ['/images/opt/vip-logo-dark.webp']
