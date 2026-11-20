@@ -16,6 +16,7 @@ export default function Footer() {
           <a href="/terms-and-conditions">Syarat &amp; Ketentuan</a>
           <a href="/privacy-policy">Kebijakan Privasi</a>
           <a href="/kontak">Kontak</a>
+          <a href="/member">Member Area</a>
         </nav>
       </footer>
 

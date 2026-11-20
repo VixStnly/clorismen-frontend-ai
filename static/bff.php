@@ -74,12 +74,39 @@ $routes = [
     ['GET', '#^products/([a-z0-9-]{1,120})$#', 'products/%s', 30],
     ['GET', '#^reviews$#', 'reviews', 120],
     ['GET', '#^recent-purchases$#', 'recent-purchases', 20], // notifikasi pembeli terbaru; cache pendek supaya order web baru cepat muncul
-    ['GET', '#^destinations$#', 'destinations', 86400], // autocomplete kecamatan (RajaOngkir), cache per kata kunci
     ['POST', '#^order-intents$#', 'order-intents', 0],
     ['GET', '#^order-intents/([A-Za-z0-9-]{4,24})$#', 'order-intents/%s', 0],
     ['GET', '#^order-intents/([A-Za-z0-9-]{4,24})/status$#', 'order-intents/%s/status', 0],
     ['POST', '#^order-intents/([A-Za-z0-9-]{4,24})/verify-payment$#', 'order-intents/%s/verify-payment', 0],
+    // Member area: token sesi hanya ada di cookie HttpOnly, diteruskan ke ERP lewat header (tidak pernah ke JavaScript)
+    ['POST', '#^member/login$#', 'member/login', 0],
+    ['POST', '#^member/password$#', 'member/password', 0],
+    ['GET', '#^member/me$#', 'member/me', 0],
+    ['GET', '#^member/ebooks/(\d{1,9})$#', 'member/ebooks/%s', 0],
+    ['POST', '#^member/logout$#', 'member/logout', 0],
 ];
+
+const MEMBER_COOKIE = 'clm_member';
+
+function bff_member_cookie(string $value, int $maxAge): void
+{
+    $https = (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+    setcookie(MEMBER_COOKIE, $value, [
+        'expires' => $maxAge > 0 ? time() + $maxAge : time() - 3600,
+        'path' => '/',
+        'secure' => $https,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+function bff_member_headers(): array
+{
+    $token = (string) ($_COOKIE[MEMBER_COOKIE] ?? '');
+
+    return preg_match('/^[a-f0-9]{64}$/', $token) ? ['X-Clm-Member: ' . $token] : [];
+}
 
 $target = null;
 $cacheTtl = 0;
@@ -123,6 +150,36 @@ if ($method === 'POST') {
         bff_fail(400, 'invalid_json', 'Body JSON tidak valid.');
     }
 
+    $str = static fn ($v, int $max): string => is_scalar($v) ? substr(trim((string) $v), 0, $max) : '';
+    if (str_contains($target, '/member/')) {
+        $forward = match (true) {
+            str_ends_with($target, '/member/login') => ['email' => $str($payload['email'] ?? '', 120), 'password' => is_string($payload['password'] ?? null) ? substr($payload['password'], 0, 100) : ''],
+            str_ends_with($target, '/member/password') => [
+                'current_password' => is_string($payload['current_password'] ?? null) ? substr($payload['current_password'], 0, 100) : '',
+                'new_password' => is_string($payload['new_password'] ?? null) ? substr($payload['new_password'], 0, 100) : '',
+            ],
+            default => [],
+        };
+        $result = $client->request('POST', $target, [], $forward, $visitorIp, $visitorAgent, bff_member_headers());
+
+        if (str_ends_with($target, '/member/login')) {
+            $json = json_decode($result['body'], true);
+            $token = (string) ($json['data']['token'] ?? '');
+            if ($result['status'] === 200 && preg_match('/^[a-f0-9]{64}$/', $token)) {
+                bff_member_cookie($token, 30 * 86400);
+                echo json_encode(['ok' => true, 'data' => ['logged_in' => true]]); // token tidak dikirim ke browser
+                exit;
+            }
+        }
+        if (str_ends_with($target, '/member/logout')) {
+            bff_member_cookie('', 0);
+        }
+
+        http_response_code($result['status']);
+        echo $result['body'];
+        exit;
+    }
+
     $forward = str_ends_with($target, '/verify-payment')
         ? array_filter(['trx_id' => preg_match('/^\d{1,20}$/', (string) ($payload['trx_id'] ?? '')) ? (string) $payload['trx_id'] : null])
         : [
@@ -132,6 +189,22 @@ if ($method === 'POST') {
 
     $result = $client->request('POST', $target, [], $forward, $visitorIp, $visitorAgent);
 
+    http_response_code($result['status']);
+    echo $result['body'];
+    exit;
+}
+
+// GET khusus member: tidak pernah di-cache (data pribadi), file e-book diteruskan sebagai PDF
+if (str_contains($target, '/member/')) {
+    $result = $client->request('GET', $target, [], null, $visitorIp, $visitorAgent, bff_member_headers());
+    if ($result['status'] === 401) {
+        bff_member_cookie('', 0);
+    }
+    if ($result['status'] === 200 && str_starts_with((string) ($result['content_type'] ?? ''), 'application/pdf')) {
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: inline; filename="ebook-clorismen.pdf"');
+        header('Cache-Control: private, no-store');
+    }
     http_response_code($result['status']);
     echo $result['body'];
     exit;

@@ -43,9 +43,10 @@ final class StorefrontClient
     }
 
     /**
-     * @return array{status: int, body: string}
+     * @param  array<int, string>  $extraHeaders  header tambahan (mis. X-Clm-Member untuk sesi member)
+     * @return array{status: int, body: string, content_type?: string}
      */
-    public function request(string $method, string $path, array $query = [], ?array $json = null, string $visitorIp = '', string $visitorAgent = ''): array
+    public function request(string $method, string $path, array $query = [], ?array $json = null, string $visitorIp = '', string $visitorAgent = '', array $extraHeaders = []): array
     {
         $method = strtoupper($method);
         $body = $json === null ? '' : json_encode($json, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -68,6 +69,9 @@ final class StorefrontClient
         if ($json !== null) {
             $headers[] = 'Content-Type: application/json';
         }
+        foreach ($extraHeaders as $h) {
+            $headers[] = preg_replace('/[\r\n]+/', '', $h);
+        }
 
         if (! function_exists('curl_init')) {
             return $this->requestViaStream($url, $method, $headers, $json !== null ? $body : null);
@@ -88,6 +92,7 @@ final class StorefrontClient
 
         $response = curl_exec($ch);
         $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        $contentType = (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
         $error = curl_error($ch);
         curl_close($ch);
 
@@ -98,7 +103,7 @@ final class StorefrontClient
             ];
         }
 
-        return ['status' => $status ?: 502, 'body' => (string) $response];
+        return ['status' => $status ?: 502, 'body' => (string) $response, 'content_type' => $contentType];
     }
 
     private function requestViaStream(string $url, string $method, array $headers, ?string $body): array
@@ -124,10 +129,13 @@ final class StorefrontClient
         restore_error_handler();
 
         $status = 0;
+        $contentType = '';
         if (isset($http_response_header) && is_array($http_response_header)) {
             foreach ($http_response_header as $hdr) {
                 if (preg_match('#^HTTP/\S+\s+(\d{3})#', $hdr, $m)) {
                     $status = (int) $m[1];
+                } elseif (stripos($hdr, 'Content-Type:') === 0) {
+                    $contentType = trim(substr($hdr, 13));
                 }
             }
         }
@@ -139,6 +147,6 @@ final class StorefrontClient
             ];
         }
 
-        return ['status' => $status ?: 502, 'body' => (string) $response];
+        return ['status' => $status ?: 502, 'body' => (string) $response, 'content_type' => $contentType];
     }
 }

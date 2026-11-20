@@ -12,7 +12,7 @@
 (function () {
   var p = location.pathname.replace(/\/+$/, '').toLowerCase();
   var LEGAL = ['/faq', '/refund-policy', '/terms-and-conditions', '/privacy-policy', '/kontak'];
-  var L = LEGAL.indexOf(p) !== -1
+  var L = LEGAL.indexOf(p) !== -1 || p === '/member'
     ? [['/images/opt/logo-white.webp']]
     : p === '/vip-paket-clorismen'
     ? [

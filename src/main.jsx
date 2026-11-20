@@ -6,6 +6,8 @@ const path = window.location.pathname.replace(/\/+$/, '').toLowerCase();
 const LEGAL = ['/faq', '/refund-policy', '/terms-and-conditions', '/privacy-policy', '/kontak'];
 const load = path === '/vip-paket-clorismen'
   ? import('./vip/VipPage.jsx')
+  : path === '/member'
+    ? import('./member/MemberPage.jsx') // member area pembeli
   : LEGAL.includes(path)
     ? import('./legal/LegalPage.jsx') // halaman informasi untuk verifikasi payment gateway
     : import('./LandingEntry.jsx');

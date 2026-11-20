@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api.js';
 import { loadMidtransSnap } from '../lib/midtrans.js';
-import DestinationPicker, { destText, destValid } from '../components/DestinationPicker.jsx';
+import { PROVINCES, EMPTY_SHIP, shipErrors, SHIP_ORDER, shipPayload, useShippingFee } from '../lib/shipping.js';
 import { REVIEWS } from '../data.js';
 import { VIP, rp, waUrl } from './vipConfig.js';
 import { initPixel, track } from './pixel.js';
@@ -363,23 +363,24 @@ function Checkout({ onResult }) {
   const [bump, setBump] = useState(false);
   const [name, setName] = useState('');
   const [wa, setWa] = useState('');
-  const [addr, setAddr] = useState('');
-  const [dest, setDest] = useState(null); // { id, label, ... } dari RajaOngkir, atau { manual: true, text }
+  const [ship, setShip] = useState(EMPTY_SHIP);
   const [bad, setBad] = useState({});
   const [busy, setBusy] = useState(false);
-  const refs = { name: useRef(null), wa: useRef(null), addr: useRef(null), dest: useRef(null) };
+  const refs = { name: useRef(null), wa: useRef(null), email: useRef(null), province: useRef(null), city: useRef(null), district: useRef(null), postal: useRef(null), addr: useRef(null) };
   const snapRef = useRef(null);
+  const setS = (k) => (e) => setShip((s) => ({ ...s, [k]: k === 'postal' ? e.target.value.replace(/\D/g, '').slice(0, 5) : e.target.value }));
 
   const pkg = VIP.packages[pkgIdx];
-  const total = pkg.price + (bump ? VIP.bump.price : 0);
-  const normalTotal = pkg.marketplace + (bump ? VIP.bump.normal : 0);
+  const shippingFee = useShippingFee([pkg.slug, ...(bump && VIP.bump.slug ? [VIP.bump.slug] : [])]);
+  const total = pkg.price + (bump ? VIP.bump.price : 0) + shippingFee;
+  const normalTotal = pkg.marketplace + (bump ? VIP.bump.normal : 0) + shippingFee;
 
   // Meta: InitiateCheckout saat user mulai mengisi form
   const startCheckout = () => track('InitiateCheckout', { value: total, currency: 'IDR', content_name: pkg.name });
 
   const finish = (status, extra = {}) => {
     setBusy(false);
-    if (status === 'paid' || status === 'cod') track('Purchase', { value: extra.total || total, currency: 'IDR', content_name: pkg.name }, false);
+    if (status === 'paid') track('Purchase', { value: extra.total || total, currency: 'IDR', content_name: pkg.name }, false);
     onResult({ status, pkg, ...extra, retry: snapRef.current ? retryPay : null });
   };
 
@@ -393,7 +394,7 @@ function Checkout({ onResult }) {
         finish('paid', base);
       },
       onPending: () => finish('pending', base),
-      onError: () => finish('error', { ...base, message: 'Pembayaran gagal atau dibatalkan. Coba lagi, atau selesaikan lewat WhatsApp admin.' }),
+      onError: () => finish('error', { ...base, message: 'Pembayaran gagal atau dibatalkan. Silakan coba lagi.' }),
       onClose: () => finish('pending', base),
     });
   };
@@ -402,7 +403,7 @@ function Checkout({ onResult }) {
     const d = snapRef.current;
     if (!d) return;
     onResult(null);
-    runSnap(d).catch(() => finish('manual', { code: d.code, total: d.total }));
+    runSnap(d).catch(() => finish('error', { code: d.code, total: d.total, message: 'Halaman pembayaran gagal dibuka. Coba lagi.' }));
   }
 
   // Kembali dari halaman bayar iPaymu: konfirmasi status ke ERP lalu tampilkan hasilnya
@@ -424,40 +425,26 @@ function Checkout({ onResult }) {
     e.preventDefault();
     if (busy) return;
     const digits = wa.replace(/\D/g, '');
-    const destOk = destValid(dest);
-    const v = { name: name.trim().length >= 2, wa: /^(0|62|8)\d{8,13}$/.test(digits), addr: addr.trim().length >= 8, dest: destOk };
-    const nextBad = { name: !v.name, wa: !v.wa, addr: !v.addr, dest: !v.dest };
+    const nextBad = { name: name.trim().length < 2, wa: !/^(0|62|8)\d{8,13}$/.test(digits), ...shipErrors(ship) };
     setBad(nextBad);
-    const first = ['name', 'wa', 'addr', 'dest'].find((k) => nextBad[k]);
+    const first = ['name', 'wa', ...SHIP_ORDER].find((k) => nextBad[k]);
     if (first) { refs[first].current?.focus(); return; }
 
     setBusy(true);
     startCheckout();
 
-    // Catatan pesanan (maks 300 karakter di ERP): alamat jalan + wilayah RajaOngkir + info paket/pembayaran
-    const area = destText(dest);
-    const bumpNote = bump && !VIP.bump.slug ? `+ ${VIP.bump.name} (${rp(VIP.bump.price)}, konfirmasi admin)` : '';
-    const meta = [area, 'VIP Page', pkg.name, bumpNote, 'Bayar: QRIS/VA'].filter(Boolean).join(' | ');
-    const room = 300 - meta.length - 3;
-    const note = room > 10 ? `${addr.trim().slice(0, room)} | ${meta}` : `${addr.trim()} | ${area}`.slice(0, 300);
-    const fullAddr = `${addr.trim()}, ${area}`;
+    const bumpNote = bump && !VIP.bump.slug ? `+ ${VIP.bump.name} (${rp(VIP.bump.price)})` : '';
+    const note = ['VIP Page', pkg.name, bumpNote].filter(Boolean).join(' | ');
 
     const items = [{ slug: pkg.slug, qty: 1 }];
     if (bump && VIP.bump.slug) items.push({ slug: VIP.bump.slug, qty: 1 });
 
-    const waFallback = waUrl(
-      `Halo admin Clorismen, saya mau order *${pkg.name}* (halaman VIP)\n\n` +
-      `Nama: ${name.trim()}\nWhatsApp: ${wa.trim()}\nAlamat: ${fullAddr}\n\n` +
-      `Paket: ${pkg.name} (${rp(pkg.price)})\n` + (bump ? `+ ${VIP.bump.name} (${rp(VIP.bump.price)})\n` : '') +
-      'Pembayaran: QRIS / Virtual Account',
-    );
-
     try {
       const data = await api.createOrderIntent({
         items,
-        customer: { name: name.trim().slice(0, 80), phone: wa.trim().slice(0, 30), note, source_url: window.location.href.slice(0, 250) },
+        customer: { name: name.trim().slice(0, 80), phone: wa.trim().slice(0, 30), ...shipPayload(ship), note, source_url: window.location.href.slice(0, 250) },
       });
-      const base = { code: data.code, total: data.total, waUrl: data.whatsapp_url || waFallback };
+      const base = { code: data.code, total: data.total, waUrl: data.whatsapp_url || undefined };
       // iPaymu: pindah ke halaman bayar iPaymu, nanti kembali ke halaman ini dengan ?order=
       if (!data.snap_token && data.redirect_url) { window.location.href = data.redirect_url; return undefined; }
       if (data.snap_token && data.client_key && data.snap_js_url) {
@@ -465,9 +452,10 @@ function Checkout({ onResult }) {
           if (data.redirect_url) { window.location.href = data.redirect_url; return undefined; }
         }
       }
-      return finish('manual', base);
+      return finish('error', { ...base, message: 'Halaman pembayaran gagal dibuka. Muat ulang halaman lalu coba lagi.' });
     } catch (err) {
-      return finish('error', { message: `${err.message || 'Gagal memproses pesanan.'} Pesanan tetap bisa dikirim lewat WhatsApp admin.`, waUrl: waFallback });
+      // Termasuk "Payment gateway belum disetting": pesanan TIDAK dibuat di ERP
+      return finish('error', { message: err.message || 'Gagal memproses pesanan. Coba lagi sebentar.' });
     }
   };
 
@@ -513,14 +501,37 @@ function Checkout({ onResult }) {
             {bad.wa ? <small className="vx-err">Nomor WhatsApp belum valid (contoh 081234567890).</small> : <small className="vx-hint">Untuk konfirmasi pesanan, resi, dan bonus.</small>}
           </div>
           <div className="vx-field">
-            <label htmlFor="vxDest">Kecamatan / Kota</label>
-            <DestinationPicker id="vxDest" theme="light" inputClassName="vx-inp" inputRef={refs.dest} value={dest} onChange={setDest} invalid={!!bad.dest} />
-            {bad.dest ? <small className="vx-err">Ketik lalu pilih kecamatan dari daftar.</small> : null}
+            <label htmlFor="vxEmail">Email</label>
+            <input ref={refs.email} id="vxEmail" className={`vx-inp${err('email')}`} type="email" inputMode="email" autoComplete="email" placeholder="nama@email.com" value={ship.email} onChange={setS('email')} />
+            {bad.email ? <small className="vx-err">Email belum valid.</small> : <small className="vx-hint">Dipakai untuk login Member Area (password dikirim ke WhatsApp).</small>}
+          </div>
+          <div className="vx-field">
+            <label htmlFor="vxProv">Provinsi</label>
+            <select ref={refs.province} id="vxProv" className={`vx-inp${err('province')}`} autoComplete="address-level1" value={ship.province} onChange={setS('province')}>
+              <option value="">Pilih provinsi</option>
+              {PROVINCES.map((pv) => <option key={pv} value={pv}>{pv}</option>)}
+            </select>
+            {bad.province ? <small className="vx-err">Pilih provinsi.</small> : null}
+          </div>
+          <div className="vx-field">
+            <label htmlFor="vxCity">Kota / Kabupaten</label>
+            <input ref={refs.city} id="vxCity" className={`vx-inp${err('city')}`} autoComplete="address-level2" placeholder="Contoh: Kota Bandung" value={ship.city} onChange={setS('city')} />
+            {bad.city ? <small className="vx-err">Isi kota atau kabupaten.</small> : null}
+          </div>
+          <div className="vx-field">
+            <label htmlFor="vxDist">Kecamatan</label>
+            <input ref={refs.district} id="vxDist" className={`vx-inp${err('district')}`} autoComplete="address-level3" placeholder="Contoh: Coblong" value={ship.district} onChange={setS('district')} />
+            {bad.district ? <small className="vx-err">Isi kecamatan.</small> : null}
+          </div>
+          <div className="vx-field">
+            <label htmlFor="vxPos">Kode Pos <small className="vx-hint">(opsional)</small></label>
+            <input ref={refs.postal} id="vxPos" className={`vx-inp${err('postal')}`} inputMode="numeric" autoComplete="postal-code" placeholder="40132" value={ship.postal} onChange={setS('postal')} />
+            {bad.postal ? <small className="vx-err">Kode pos 5 angka.</small> : null}
           </div>
           <div className="vx-field">
             <label htmlFor="vxAddr">Alamat Lengkap</label>
-            <textarea ref={refs.addr} id="vxAddr" className={`vx-inp${err('addr')}`} rows="2" autoComplete="street-address" maxLength={180}
-              placeholder="Nama jalan, nomor rumah, RT/RW, patokan" value={addr} onChange={(e) => setAddr(e.target.value)} />
+            <textarea ref={refs.addr} id="vxAddr" className={`vx-inp${err('addr')}`} rows="2" autoComplete="street-address" maxLength={250}
+              placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, patokan" value={ship.addr} onChange={setS('addr')} />
             {bad.addr ? <small className="vx-err">Isi nama jalan dan nomor rumah.</small> : null}
           </div>
         </div>
@@ -552,7 +563,7 @@ function Checkout({ onResult }) {
             {bump ? <div className="vx-sum-row vx-pop"><span>{VIP.bump.name}</span><span>{rp(VIP.bump.price)}</span></div> : null}
             <div className="vx-sum-row"><span>Bonus E-Book</span><span className="vx-free">GRATIS</span></div>
             {pkg.hot ? <div className="vx-sum-row"><span>Konsultasi Ahli Kesehatan Kulit</span><span className="vx-free">GRATIS</span></div> : null}
-            <div className="vx-sum-row"><span>Ongkos kirim</span><span className="vx-free">GRATIS</span></div>
+            <div className="vx-sum-row"><span>Ongkos kirim</span>{shippingFee > 0 ? <span>{rp(shippingFee)}</span> : <span className="vx-free">GRATIS</span>}</div>
             <div className="vx-sum-total">
               <span>Total bayar</span>
               <div><s>{rp(normalTotal)}</s><b key={total} className="vx-pop">{rp(total)}</b></div>
@@ -568,7 +579,7 @@ function Checkout({ onResult }) {
           </button>
           <div className="vx-secure">
             <span><i className="fa-solid fa-lock" /> Data aman</span>
-            <span><i className="fa-solid fa-truck-fast" /> Gratis ongkir</span>
+            <span><i className="fa-solid fa-truck-fast" /> {shippingFee > 0 ? 'Resi via WhatsApp' : 'Gratis ongkir'}</span>
             <span><i className="fa-brands fa-whatsapp" /> Admin siap bantu</span>
           </div>
         </div>
@@ -579,11 +590,9 @@ function Checkout({ onResult }) {
 
 /* ================= Thank you (setelah checkout) ================= */
 const RESULT_COPY = {
-  paid: { icon: 'fa-circle-check', tone: 'ok', title: 'Pembayaran Berhasil', text: 'Terima kasih! Pesanan kamu sudah kami terima dan segera diproses.' },
+  paid: { icon: 'fa-circle-check', tone: 'ok', title: 'Pembayaran Berhasil', text: 'Terima kasih! Pesanan kamu sudah kami terima. Email & password Member Area dikirim ke WhatsApp kamu untuk cek status pesanan dan resi.' },
   pending: { icon: 'fa-clock', tone: 'warn', title: 'Menunggu Pembayaran', text: 'Selesaikan pembayaran QRIS / Virtual Account. Status pesanan diperbarui otomatis setelah lunas.' },
-  cod: { icon: 'fa-circle-check', tone: 'ok', title: 'Pesanan COD Tercatat', text: 'Admin akan mengonfirmasi pesanan lewat WhatsApp. Siapkan uang pas saat kurir tiba.' },
   checking: { icon: 'fa-spinner fa-spin', tone: 'warn', title: 'Mengecek Pembayaran…', text: 'Sebentar ya, kami sedang memastikan status pembayaran kamu.' },
-  manual: { icon: 'fa-circle-info', tone: 'warn', title: 'Pesanan Tercatat', text: 'Pembayaran online belum aktif. Admin akan membantu menyelesaikan pesanan lewat WhatsApp.' },
   error: { icon: 'fa-circle-exclamation', tone: 'bad', title: 'Pesanan Belum Terkirim', text: '' },
 };
 
@@ -621,15 +630,15 @@ function ThankYou({ result, onClose }) {
           {result.status === 'pending' && result.retry ? (
             <button type="button" className="vx-btn vx-btn-gold vx-btn-block" onClick={result.retry}>Lanjut Bayar <i className="fa-solid fa-lock" /></button>
           ) : null}
-          {result.status === 'paid' && VIP.ebookUrl ? (
-            <a className="vx-btn vx-btn-dark vx-btn-block" href={VIP.ebookUrl} target="_blank" rel="noopener"><i className="fa-solid fa-download" /> Download E-Book {VIP.ebookTitle}</a>
+          {result.status === 'paid' ? (
+            <a className="vx-btn vx-btn-dark vx-btn-block" href="/member"><i className="fa-solid fa-crown" /> Masuk Member Area (E-Book)</a>
           ) : null}
           {result.code && result.pkg?.hot && result.status !== 'error' ? (
             <a className="vx-btn vx-btn-wa vx-btn-block" href={waUrl(consultText)} target="_blank" rel="noopener"><i className="fa-brands fa-whatsapp" /> Konsultasi Ahli Kesehatan Kulit</a>
           ) : null}
           <a className="vx-btn vx-btn-ghost vx-btn-block" href={result.waUrl || waUrl(adminText)} target="_blank" rel="noopener"><i className="fa-brands fa-whatsapp" /> Chat Admin</a>
         </div>
-        {result.status === 'paid' && !VIP.ebookUrl ? <p className="vx-hint center">Link E-Book dikirim admin lewat WhatsApp.</p> : null}
+        {result.status === 'paid' ? <p className="vx-hint center">Email &amp; password Member Area dikirim ke WhatsApp kamu.</p> : null}
       </div>
     </div>
   );
@@ -716,6 +725,8 @@ function Footer({ onPolicy }) {
         <a href="/privacy-policy">Kebijakan Privasi</a>
         <span>·</span>
         <a href="/kontak">Kontak</a>
+        <span>·</span>
+        <a href="/member">Member Area</a>
       </div>
       <p className="vx-disclaimer">
         Hasil pemakaian dapat bervariasi pada setiap individu tergantung jenis kulit dan keteraturan penggunaan.
