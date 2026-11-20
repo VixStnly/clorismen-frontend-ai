@@ -75,9 +75,10 @@ $routes = [
     ['GET', '#^reviews$#', 'reviews', 120],
     ['GET', '#^recent-purchases$#', 'recent-purchases', 20], // notifikasi pembeli terbaru; cache pendek supaya order web baru cepat muncul
     ['POST', '#^order-intents$#', 'order-intents', 0],
-    ['GET', '#^order-intents/([A-Za-z0-9-]{4,24})$#', 'order-intents/%s', 0],
-    ['GET', '#^order-intents/([A-Za-z0-9-]{4,24})/status$#', 'order-intents/%s/status', 0],
-    ['POST', '#^order-intents/([A-Za-z0-9-]{4,24})/verify-payment$#', 'order-intents/%s/verify-payment', 0],
+    // Halaman terima kasih: hanya lewat token acak 40 karakter. Status per kode order (WEB-XXXX) sengaja
+    // tidak dibuka ke browser supaya orang tidak bisa menebak-nebak pesanan orang lain.
+    ['GET', '#^thanks/([A-Za-z0-9]{40})$#', 'thanks/%s', 0],
+    ['POST', '#^thanks/([A-Za-z0-9]{40})/verify-payment$#', 'thanks/%s/verify-payment', 0],
     // Member area: token sesi hanya ada di cookie HttpOnly, diteruskan ke ERP lewat header (tidak pernah ke JavaScript)
     ['POST', '#^member/login$#', 'member/login', 0],
     ['POST', '#^member/password$#', 'member/password', 0],

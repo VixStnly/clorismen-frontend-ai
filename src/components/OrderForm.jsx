@@ -1,26 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { CONFIG, rp, waLink } from '../config.js';
 import { api } from '../lib/api.js';
+import { goThanks } from '../lib/thanks.js';
 import { loadMidtransSnap } from '../lib/midtrans.js';
 import { useOrder } from '../state/OrderContext.jsx';
 import { track } from '../lib/pixel.js';
-import { takePaymentReturn, confirmPaymentReturn } from '../lib/paymentReturn.js';
 import ProdImg from './ProdImg.jsx';
 import { PROVINCES, EMPTY_SHIP, shipErrors, SHIP_ORDER, shipPayload, useShippingFee } from '../lib/shipping.js';
 import { useWaNumber } from '../lib/waNumber.js';
 
-/* Dialog hasil pesanan: memakai kelas .lightbox/.box yang sudah ada (tanpa gaya baru selain lebar, lihat checkout.css) */
-const STATUS_COPY = {
-  checking: { eyebrow: 'Mengecek Pembayaran', title: 'Sebentar Ya…', text: 'Kami sedang memastikan status pembayaran lo.' },
-  paid: { eyebrow: 'Pembayaran Berhasil', title: 'Makasih, Pesanan Lo Masuk!', text: 'Pembayaran sudah kami terima. Email & password Member Area kami kirim ke WhatsApp lo. Di sana lo bisa cek status pesanan, resi, dan baca e-book.' },
-  pending: { eyebrow: 'Menunggu Pembayaran', title: 'Pesanan Dibuat', text: 'Selesaikan pembayarannya, status pesanan otomatis diperbarui. Kalau butuh bantuan, chat admin lewat WhatsApp.' },
-  error: { eyebrow: 'Ups', title: 'Pesanan Belum Terkirim', text: '' },
-};
-
-function ResultDialog({ result, onClose, onRetryPay }) {
+/* Dialog error saja (mis. "Payment gateway belum disetting"). Hasil pembayaran tampil di halaman /terima-kasih/{token}. */
+function ErrorDialog({ result, onClose }) {
   useWaNumber();
   const open = !!result;
-  const copy = result ? STATUS_COPY[result.status] : STATUS_COPY.error;
   return (
     <div className={`lightbox${open ? ' open' : ''}`} aria-hidden={open ? 'false' : 'true'} role="dialog"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -28,26 +20,10 @@ function ResultDialog({ result, onClose, onRetryPay }) {
         <button type="button" className="close" aria-label="Tutup" onClick={onClose}><i className="fa-solid fa-xmark" /></button>
         {open ? (
           <div className="txt">
-            <div className="eyebrow">{copy.eyebrow}</div>
-            <div className="h2" style={{ fontSize: '30px' }}>{result?.title || copy.title}</div>
-            <p style={{ color: 'var(--muted)' }}>{result.status === 'error' ? result.message : copy.text}</p>
-            {result.code ? (
-              <div className="sum-code" style={{ fontWeight: 800 }}>
-                <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Kode order: </span>{result.code}
-                {result.total ? <span style={{ color: 'var(--muted)', fontWeight: 600 }}> · Total </span> : null}
-                {result.total ? rp(result.total) : null}
-              </div>
-            ) : null}
-            {result.status === 'pending' && result.snapToken ? (
-              <button type="button" className="btn btn-primary" onClick={onRetryPay}>Lanjut Bayar <i className="fa-solid fa-lock" /></button>
-            ) : null}
-            {result.status === 'pending' && !result.snapToken && result.payUrl ? (
-              <a href={result.payUrl} className="btn btn-primary">Lanjut Bayar <i className="fa-solid fa-lock" /></a>
-            ) : null}
-            {result.status === 'paid' ? (
-              <a href="/member" className="btn btn-primary"><i className="fa-solid fa-crown" /> Masuk Member Area (E-Book)</a>
-            ) : null}
-            <a href={result.waUrl || waLink()} target="_blank" rel="noopener" className="btn btn-ghost">
+            <div className="eyebrow">Ups</div>
+            <div className="h2" style={{ fontSize: '30px' }}>Pesanan Belum Terkirim</div>
+            <p style={{ color: 'var(--muted)' }}>{result.message}</p>
+            <a href={waLink()} target="_blank" rel="noopener" className="btn btn-ghost">
               <i className="fa-brands fa-whatsapp" /> Chat Admin via WhatsApp
             </a>
           </div>
@@ -66,43 +42,13 @@ export function OrderForm() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   const refs = { name: useRef(null), wa: useRef(null), email: useRef(null), province: useRef(null), city: useRef(null), district: useRef(null), postal: useRef(null), addr: useRef(null) };
-  const snapRef = useRef(null);
   const shippingFee = useShippingFee([CONFIG.packages[qtyIdx].slug]);
 
   const red = (k) => (bad[k] ? { borderColor: 'var(--red)' } : undefined);
   const setS = (k) => (e) => setShip((s) => ({ ...s, [k]: k === 'postal' ? e.target.value.replace(/\D/g, '').slice(0, 5) : e.target.value }));
 
-  const finish = (status, extra = {}) => {
-    setResult({ status, ...extra });
-    setBusy(false);
-    // Meta: Purchase hanya saat pembayaran sudah pasti lunas
-    if (status === 'paid') track('Purchase', { value: extra.total || 0, currency: 'IDR', content_name: 'Clean Skin Series' }, false);
-  };
+  const fail = (message) => { setResult({ status: 'error', message }); setBusy(false); };
   const startCheckout = () => track('InitiateCheckout', { content_name: 'Clean Skin Series', currency: 'IDR' });
-
-  // Kembali dari halaman bayar iPaymu: konfirmasi status ke ERP lalu tampilkan hasilnya
-  useEffect(() => {
-    const ret = takePaymentReturn();
-    if (!ret) return;
-    setResult({ status: 'checking', code: ret.code });
-    confirmPaymentReturn(ret).then((r) => finish(r.status, r));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const runSnap = async (data, pkgLabel) => {
-    const snap = await loadMidtransSnap(data.snap_js_url, data.client_key);
-    const base = { code: data.code, total: data.total, waUrl: data.whatsapp_url, snapToken: data.snap_token };
-    snapRef.current = { snap, data, pkgLabel };
-    snap.pay(data.snap_token, {
-      onSuccess: async () => {
-        try { await api.verifyPayment(data.code); } catch { /* status tetap diperbarui via webhook */ }
-        finish('paid', base);
-      },
-      onPending: () => finish('pending', base),
-      onError: () => finish('error', { ...base, message: 'Pembayaran gagal atau dibatalkan. Silakan coba lagi.' }),
-      onClose: () => finish('pending', base),
-    });
-  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -122,31 +68,24 @@ export function OrderForm() {
         items: [{ slug: p.slug, qty: 1 }],
         customer: { name: name.trim().slice(0, 80), phone: wa.trim().slice(0, 30), ...shipPayload(ship), note, source_url: window.location.href.slice(0, 250) },
       });
-      const base = { code: data.code, total: data.total, waUrl: data.whatsapp_url || undefined };
-
-      // iPaymu: pindah ke halaman bayar iPaymu, nanti kembali ke landing dengan ?order=
+      // Semua jalur pembayaran berakhir di halaman /terima-kasih/{token} (bukan modal)
       if (!data.snap_token && data.redirect_url) { window.location.href = data.redirect_url; return undefined; }
 
       if (data.snap_token && data.client_key && data.snap_js_url) {
         try {
-          await runSnap({ ...data, whatsapp_url: base.waUrl }, p.tier);
+          const snap = await loadMidtransSnap(data.snap_js_url, data.client_key);
+          const done = () => goThanks(data);
+          snap.pay(data.snap_token, { onSuccess: done, onPending: done, onError: done, onClose: done });
           return undefined;
         } catch {
           if (data.redirect_url) { window.location.href = data.redirect_url; return undefined; }
         }
       }
-      return finish('error', { ...base, message: 'Halaman pembayaran gagal dibuka. Muat ulang halaman lalu coba lagi.' });
+      return fail('Halaman pembayaran gagal dibuka. Muat ulang halaman lalu coba lagi.');
     } catch (err) {
       // Termasuk "Payment gateway belum disetting": pesanan TIDAK dibuat di ERP
-      return finish('error', { message: err.message || 'Gagal memproses pesanan. Coba lagi sebentar.' });
+      return fail(err.message || 'Gagal memproses pesanan. Coba lagi sebentar.');
     }
-  };
-
-  const retryPay = () => {
-    const s = snapRef.current;
-    if (!s) return;
-    setResult(null);
-    runSnap(s.data, s.pkgLabel).catch(() => finish('error', { code: s.data.code, total: s.data.total, message: 'Halaman pembayaran gagal dibuka. Coba lagi.' }));
   };
 
   return (
@@ -189,7 +128,7 @@ export function OrderForm() {
         <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={busy}>{busy ? 'Memproses…' : 'Ya, Gue Mau Muka Bersih Maksimal – Pesan Sekarang'}</button>
         <div className="secure"><span><i className="fa-solid fa-lock" />Data aman</span><span><i className="fa-solid fa-truck-fast" />{shippingFee > 0 ? 'Resi via WhatsApp' : 'Gratis ongkir'}</span><span><i className="fa-brands fa-whatsapp" />Admin siap bantu</span></div>
       </form>
-      <ResultDialog result={result} onClose={() => setResult(null)} onRetryPay={retryPay} />
+      <ErrorDialog result={result} onClose={() => setResult(null)} />
     </>
   );
 }

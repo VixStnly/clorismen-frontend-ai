@@ -88,6 +88,10 @@ section{position:relative}
 .nav ul a::after{content:"";position:absolute;left:0;right:100%;bottom:-6px;height:2px;background:var(--lime);transition:right .35s var(--ease)}
 .nav ul a:hover::after{right:0}
 .nav .btn{padding:12px 22px;font-size:12.5px}
+.nav-cta{display:flex;align-items:center;gap:10px}
+.nav-member{display:inline-flex;align-items:center;gap:7px;padding:10px 16px;border-radius:999px;border:1px solid var(--line);font-size:13.5px;font-weight:700;color:#fff;background:rgba(255,255,255,.06);transition:background .3s,border-color .3s}
+.nav-member:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35)}
+.nav-member i{font-size:15px;color:var(--lime)}
 
 /* =========================================================
    1. HERO
@@ -646,6 +650,8 @@ footer .foot-links a:hover{color:#fff;text-decoration:underline}
   .nav .inner{height:56px}
   .nav .logo img{height:28px}
   .nav .btn{padding:9px 14px;font-size:11px;letter-spacing:.03em}
+  .nav-cta{gap:6px}
+  .nav-member{padding:8px 11px;font-size:11.5px}
   .hero{padding:36px 0 70px}
   .hero-visual{height:470px}
   .hero-arch{width:84%;right:2%}

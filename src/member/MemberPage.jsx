@@ -54,24 +54,59 @@ function Login({ onDone }) {
 
   return (
     <div className="mb-login">
-      <div className="mb-login-card">
-        <span className="mb-badge"><i className="fa-solid fa-crown" /> Member Area</span>
-        <h1>Masuk ke Member Area</h1>
-        <p className="mb-dim">Khusus pembeli Clorismen. Cek status pesanan &amp; resi, baca e-book bonus, dan lihat produk lainnya.</p>
+      <div className="mb-blob a" aria-hidden="true" />
+      <div className="mb-blob b" aria-hidden="true" />
+      <div className="mb-login-shell">
+        <aside className="mb-login-hero">
+          <span className="mb-badge gold"><i className="fa-solid fa-crown" /> Eksklusif Pembeli</span>
+          <h2>Perawatan kulitmu,<br /><em>semua di satu tempat.</em></h2>
+          <p>Akses gratis untuk setiap pembeli Clorismen. Pantau paket sampai di tangan, dan rawat kulit dengan panduan dari ahlinya.</p>
+          <ul className="mb-perks">
+            <li><i className="fa-solid fa-truck-fast" /><div><b>Lacak pesanan &amp; resi</b><span>Status pengiriman terbaru, real-time</span></div></li>
+            <li><i className="fa-solid fa-book-open" /><div><b>E-book perawatan 30 hari</b><span>Panduan rutin pagi &amp; malam</span></div></li>
+            <li><i className="fa-solid fa-user-doctor" /><div><b>Konsultasi ahli kulit</b><span>Tanya langsung lewat WhatsApp</span></div></li>
+          </ul>
+          <img className="mb-hero-img" src="/images/opt/vip-hero-bundle-600.webp" alt="" width="600" height="600" loading="eager" decoding="async"
+            onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+        </aside>
 
-        <form onSubmit={submit}>
-          <label htmlFor="mb-email">Email saat memesan</label>
-          <input id="mb-email" type="email" inputMode="email" autoComplete="username" placeholder="nama@email.com" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />
-          <label htmlFor="mb-pass" style={{ marginTop: 12 }}>Password</label>
-          <div className="mb-pass">
-            <input id="mb-pass" type={show ? 'text' : 'password'} autoComplete="current-password" placeholder="Password dari WhatsApp" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <button type="button" className="mb-link" onClick={() => setShow(!show)}>{show ? 'Tutup' : 'Lihat'}</button>
+        <section className="mb-login-card">
+          <div className="mb-login-icon"><i className="fa-solid fa-lock" /></div>
+          <h1>Masuk Member Area</h1>
+          <p className="mb-dim">Pakai email saat memesan dan password yang kami kirim ke WhatsApp kamu.</p>
+
+          <form onSubmit={submit} noValidate>
+            <label htmlFor="mb-email">Email</label>
+            <div className="mb-field">
+              <i className="fa-regular fa-envelope" />
+              <input id="mb-email" type="email" inputMode="email" autoComplete="username" placeholder="nama@email.com" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />
+            </div>
+            <label htmlFor="mb-pass">Password</label>
+            <div className="mb-field">
+              <i className="fa-solid fa-key" />
+              <input id="mb-pass" type={show ? 'text' : 'password'} autoComplete="current-password" placeholder="Password dari WhatsApp" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <button type="button" className="mb-eye" aria-label={show ? 'Sembunyikan password' : 'Lihat password'} onClick={() => setShow(!show)}>
+                <i className={`fa-regular ${show ? 'fa-eye-slash' : 'fa-eye'}`} />
+              </button>
+            </div>
+            {msg ? <p className={`mb-msg ${msg.t}`}><i className="fa-solid fa-circle-exclamation" /> {msg.m}</p> : null}
+            <button type="submit" className="mb-btn gold" disabled={busy}>
+              {busy ? <><i className="fa-solid fa-spinner fa-spin" /> Memeriksa…</> : <>Masuk Sekarang <i className="fa-solid fa-arrow-right" /></>}
+            </button>
+          </form>
+
+          <div className="mb-forgot">
+            <span>Lupa password?</span>
+            <a href={waHref('Halo admin Clorismen, saya lupa password Member Area. Email saya: ' + email.trim())} target="_blank" rel="noopener"><i className="fa-brands fa-whatsapp" /> Minta kirim ulang</a>
           </div>
-          <button type="submit" className="mb-btn" disabled={busy}>{busy ? 'Memeriksa…' : 'Masuk'}</button>
-        </form>
-        {msg ? <p className={`mb-msg ${msg.t}`}>{msg.m}</p> : null}
-        <p className="mb-small">Email &amp; password dikirim otomatis ke WhatsApp kamu setelah pembayaran berhasil. Lupa password? <a href={waHref('Halo admin Clorismen, saya lupa password Member Area. Email saya: ' + email.trim())} target="_blank" rel="noopener">Chat admin</a> untuk kirim ulang.</p>
-        <p className="mb-small">Belum pernah belanja? <a href="/">Belanja sekarang</a></p>
+
+          <ol className="mb-howto" aria-label="Cara mendapatkan akun">
+            <li><b>1</b><span>Pesan &amp; bayar</span></li>
+            <li><b>2</b><span>Akun dikirim ke WhatsApp</span></li>
+            <li><b>3</b><span>Masuk di sini</span></li>
+          </ol>
+          <p className="mb-small center">Belum punya akun? <a href="/">Belanja sekarang</a>, akunnya dibuat otomatis.</p>
+        </section>
       </div>
     </div>
   );

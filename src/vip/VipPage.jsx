@@ -5,7 +5,7 @@ import { PROVINCES, EMPTY_SHIP, shipErrors, SHIP_ORDER, shipPayload, useShipping
 import { REVIEWS } from '../data.js';
 import { VIP, rp, waUrl } from './vipConfig.js';
 import { initPixel, track } from './pixel.js';
-import { takePaymentReturn, confirmPaymentReturn } from '../lib/paymentReturn.js';
+import { goThanks } from '../lib/thanks.js';
 import { useWaNumber } from '../lib/waNumber.js';
 import PurchaseToast from '../components/PurchaseToast.jsx';
 import './vip.css';
@@ -136,7 +136,10 @@ function Hero() {
 
       <div className="vx-brandrow" data-rv>
         <img src={IMG.logo} alt="Clorismen" className="vx-logo" width="120" height="65" />
-        <span className="vx-vipchip"><i className="fa-solid fa-crown" /> VIP ACCESS</span>
+        <div className="vx-brandright">
+          <span className="vx-vipchip"><i className="fa-solid fa-crown" /> VIP ACCESS</span>
+          <a className="vx-memberlink" href="/member" aria-label="Masuk Member Area"><i className="fa-solid fa-circle-user" /> Member</a>
+        </div>
       </div>
 
       <div className="vx-eyebrow" data-rv style={{ '--d': '.04s' }}>Paket Perawatan Pria · 30 Hari</div>
@@ -367,7 +370,6 @@ function Checkout({ onResult }) {
   const [bad, setBad] = useState({});
   const [busy, setBusy] = useState(false);
   const refs = { name: useRef(null), wa: useRef(null), email: useRef(null), province: useRef(null), city: useRef(null), district: useRef(null), postal: useRef(null), addr: useRef(null) };
-  const snapRef = useRef(null);
   const setS = (k) => (e) => setShip((s) => ({ ...s, [k]: k === 'postal' ? e.target.value.replace(/\D/g, '').slice(0, 5) : e.target.value }));
 
   const pkg = VIP.packages[pkgIdx];
@@ -378,48 +380,8 @@ function Checkout({ onResult }) {
   // Meta: InitiateCheckout saat user mulai mengisi form
   const startCheckout = () => track('InitiateCheckout', { value: total, currency: 'IDR', content_name: pkg.name });
 
-  const finish = (status, extra = {}) => {
-    setBusy(false);
-    if (status === 'paid') track('Purchase', { value: extra.total || total, currency: 'IDR', content_name: pkg.name }, false);
-    onResult({ status, pkg, ...extra, retry: snapRef.current ? retryPay : null });
-  };
-
-  const runSnap = async (data) => {
-    const snap = await loadMidtransSnap(data.snap_js_url, data.client_key);
-    const base = { code: data.code, total: data.total, snapToken: data.snap_token };
-    snapRef.current = data;
-    snap.pay(data.snap_token, {
-      onSuccess: async () => {
-        try { await api.verifyPayment(data.code); } catch { /* webhook tetap memperbarui status */ }
-        finish('paid', base);
-      },
-      onPending: () => finish('pending', base),
-      onError: () => finish('error', { ...base, message: 'Pembayaran gagal atau dibatalkan. Silakan coba lagi.' }),
-      onClose: () => finish('pending', base),
-    });
-  };
-
-  function retryPay() {
-    const d = snapRef.current;
-    if (!d) return;
-    onResult(null);
-    runSnap(d).catch(() => finish('error', { code: d.code, total: d.total, message: 'Halaman pembayaran gagal dibuka. Coba lagi.' }));
-  }
-
-  // Kembali dari halaman bayar iPaymu: konfirmasi status ke ERP lalu tampilkan hasilnya
-  useEffect(() => {
-    const ret = takePaymentReturn();
-    if (!ret) return;
-    onResult({ status: 'checking', code: ret.code });
-    confirmPaymentReturn(ret).then((r) => {
-      const slugs = (r.items || []).map((l) => l.slug);
-      const found = VIP.packages.find((p) => slugs.includes(p.slug)) || pkg;
-      if (r.status === 'paid') track('Purchase', { value: r.total || 0, currency: 'IDR', content_name: found.name }, false);
-      const retry = r.status === 'pending' && r.payUrl ? () => { window.location.href = r.payUrl; } : null;
-      onResult({ ...r, pkg: found, retry });
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Hasil pembayaran tampil di halaman /terima-kasih/{token}; di sini hanya error sebelum bayar
+  const fail = (message) => { setBusy(false); onResult({ status: 'error', message }); };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -444,18 +406,22 @@ function Checkout({ onResult }) {
         items,
         customer: { name: name.trim().slice(0, 80), phone: wa.trim().slice(0, 30), ...shipPayload(ship), note, source_url: window.location.href.slice(0, 250) },
       });
-      const base = { code: data.code, total: data.total, waUrl: data.whatsapp_url || undefined };
-      // iPaymu: pindah ke halaman bayar iPaymu, nanti kembali ke halaman ini dengan ?order=
+      // Semua jalur pembayaran berakhir di halaman /terima-kasih/{token} (bukan modal)
       if (!data.snap_token && data.redirect_url) { window.location.href = data.redirect_url; return undefined; }
       if (data.snap_token && data.client_key && data.snap_js_url) {
-        try { await runSnap(data); return undefined; } catch {
+        try {
+          const snap = await loadMidtransSnap(data.snap_js_url, data.client_key);
+          const done = () => goThanks(data);
+          snap.pay(data.snap_token, { onSuccess: done, onPending: done, onError: done, onClose: done });
+          return undefined;
+        } catch {
           if (data.redirect_url) { window.location.href = data.redirect_url; return undefined; }
         }
       }
-      return finish('error', { ...base, message: 'Halaman pembayaran gagal dibuka. Muat ulang halaman lalu coba lagi.' });
+      return fail('Halaman pembayaran gagal dibuka. Muat ulang halaman lalu coba lagi.');
     } catch (err) {
       // Termasuk "Payment gateway belum disetting": pesanan TIDAK dibuat di ERP
-      return finish('error', { message: err.message || 'Gagal memproses pesanan. Coba lagi sebentar.' });
+      return fail(err.message || 'Gagal memproses pesanan. Coba lagi sebentar.');
     }
   };
 

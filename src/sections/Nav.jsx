@@ -13,7 +13,10 @@ export default function Nav() {
             <li><a href="#bonus">Bonus Ebook</a></li>
             <li><a href="#faq">FAQ</a></li>
           </ul>
-          <a href="#order" className="btn btn-primary">Pesan Sekarang</a>
+          <div className="nav-cta">
+            <a href="/member" className="nav-member" aria-label="Member Area"><i className="fa-solid fa-circle-user" /><span>Member</span></a>
+            <a href="#order" className="btn btn-primary">Pesan Sekarang</a>
+          </div>
         </div>
       </nav>
     </>
