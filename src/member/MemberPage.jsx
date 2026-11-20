@@ -14,13 +14,12 @@ import './member.css';
  */
 const rp = (n) => 'Rp' + Number(n || 0).toLocaleString('id-ID');
 const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }) : '-');
-const fmtTime = (iso) => (iso ? `${new Date(iso).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })} WIB` : '');
 const STATUS = {
   unpaid: ['Menunggu pembayaran', 'warn'],
-  paid: ['Dibayar, menunggu dikemas', 'info'],
-  packed: ['Sedang dikemas', 'info'],
-  shipped: ['Dalam pengiriman', 'ok'],
-  completed: ['Diterima', 'ok'],
+  paid: ['Siap dikemas', 'info'],
+  packed: ['Dikemas', 'info'],
+  shipped: ['Dikirim', 'ok'],
+  completed: ['Selesai', 'ok'],
   cancelled: ['Dibatalkan', 'bad'],
 };
 
@@ -117,22 +116,7 @@ function Login({ onDone }) {
   );
 }
 
-function Tracking({ o }) {
-  if (!o.tracking?.length) return null;
-  return (
-    <ol className="mb-track">
-      {o.tracking.map((t, i) => (
-        <li key={`${t.at}-${i}`} className={i === 0 ? 'is-now' : ''}>
-          <b>{t.label}{t.location ? <span> · {t.location}</span> : null}</b>
-          <p>{t.description}</p>
-          <small>{fmtTime(t.at)}</small>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-const STEPS = [['paid', 'Dibayar'], ['packed', 'Dikemas'], ['shipped', 'Dikirim'], ['completed', 'Diterima']];
+const STEPS = [['paid', 'Siap dikemas'], ['packed', 'Dikemas'], ['shipped', 'Dikirim'], ['completed', 'Selesai']];
 
 function Steps({ status }) {
   const idx = STEPS.findIndex(([k]) => k === status);
@@ -140,6 +124,29 @@ function Steps({ status }) {
   return (
     <div className="mb-steps">
       {STEPS.map(([k, label], i) => <span key={k} className={i <= idx ? 'on' : ''}>{label}</span>)}
+    </div>
+  );
+}
+
+/* Nomor resi + tombol ke situs cek resi resmi kurir. Resi otomatis disalin supaya tinggal ditempel di sana. */
+function ResiBox({ o }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try { await navigator.clipboard?.writeText(o.tracking_number); setCopied(true); setTimeout(() => setCopied(false), 2500); } catch { /* clipboard ditolak */ }
+  };
+  return (
+    <div className="mb-resi">
+      <div className="mb-resi-top">
+        <span><i className="fa-solid fa-truck-fast" /> {o.courier || 'Kurir'}</span>
+        <b className="mb-resi-no">{o.tracking_number}</b>
+        <button type="button" className="mb-link" onClick={copy}>{copied ? 'Tersalin ✓' : 'Salin'}</button>
+      </div>
+      {o.tracking_url ? (
+        <a className="mb-btn sm track" href={o.tracking_url} target="_blank" rel="noopener" onClick={copy}>
+          Cek resi di {o.tracking_site || 'situs kurir'} <i className="fa-solid fa-arrow-up-right-from-square" />
+        </a>
+      ) : null}
+      {o.tracking_url ? <small>Nomor resi otomatis tersalin. Tempel di kolom lacak pada situs kurir.</small> : null}
     </div>
   );
 }
@@ -163,13 +170,8 @@ function OrdersCard({ orders }) {
               <b>{rp(o.total)}</b>
             </div>
             {o.address ? <p className="mb-addr"><i className="fa-solid fa-location-dot" /> {o.recipient ? <b>{o.recipient}: </b> : null}{o.address}</p> : null}
-            {o.tracking_number ? (
-              <div className="mb-resi"><i className="fa-solid fa-truck-fast" /> {o.courier || 'Kurir'} · resi <b>{o.tracking_number}</b>
-                <button type="button" className="mb-link" onClick={() => navigator.clipboard?.writeText(o.tracking_number)}>Salin</button>
-                {o.tracking_url ? <a className="mb-link" href={o.tracking_url} target="_blank" rel="noopener">Lacak</a> : null}
-              </div>
-            ) : (['paid', 'packed'].includes(o.status) ? <p className="mb-addr">Nomor resi muncul di sini setelah paket diserahkan ke kurir.</p> : null)}
-            <Tracking o={o} />
+            {o.tracking_number ? <ResiBox o={o} /> : null}
+            {!o.tracking_number && ['paid', 'packed'].includes(o.status) ? <p className="mb-addr">Nomor resi muncul di sini setelah paket diserahkan ke kurir.</p> : null}
           </div>
         );
       })}
@@ -409,9 +411,7 @@ function Home({ data, go }) {
           <div className="mb-card-head"><h2><i className="fa-solid fa-box" /> Pesanan terakhir</h2><button type="button" className="mb-link" onClick={() => go('pesanan')}>Lihat detail <i className="fa-solid fa-arrow-right" /></button></div>
           <div className="mb-order-top"><b>{last.code}</b><span className={`mb-pill ${tone}`}>{label}</span></div>
           <Steps status={last.status} />
-          {last.tracking_number
-            ? <p className="mb-addr"><i className="fa-solid fa-truck-fast" /> {last.courier || 'Kurir'} · resi <b>{last.tracking_number}</b></p>
-            : <p className="mb-addr">{fmtDate(last.date)} · {rp(last.total)}</p>}
+          {last.tracking_number ? <ResiBox o={last} /> : <p className="mb-addr">{fmtDate(last.date)} · {rp(last.total)}</p>}
         </section>
       ) : (
         <section className="mb-card"><h2><i className="fa-solid fa-box" /> Pesanan</h2><p className="mb-dim">Belum ada pesanan.</p></section>
