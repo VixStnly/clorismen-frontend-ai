@@ -1,8 +1,10 @@
 /* =========================================================
    KONFIGURASI — ubah di sini
    ========================================================= */
+import { waHref } from './lib/waNumber.js';
+
 export const CONFIG = {
-  waNumber: '6285217866413',                 // Nomor WA admin: +62 852-1786-6413
+  // Nomor WA admin TIDAK diatur di sini: diambil dari ERP (Landing Page CMS → Brand), lihat src/lib/waNumber.js
   promoEnd: '2026-11-30T23:59:59+07:00',     // GANTI: tanggal akhir promo (jujur)
   endText: '30 November 2026',
   price: 199000, normal: 332000,
@@ -17,8 +19,7 @@ export const CONFIG = {
 };
 
 export const rp = (n) => 'Rp' + n.toLocaleString('id-ID');
-export const waLink = (txt = 'Halo admin Clorismen, saya mau tanya soal Clean Skin Series') =>
-  `https://wa.me/${CONFIG.waNumber}?text=${encodeURIComponent(txt)}`;
+export const waLink = (txt = 'Halo admin Clorismen, saya mau tanya soal Clean Skin Series') => waHref(txt);
 
 /* ---------- Aset ---------- */
 // Foto dipakai dari folder images/ (lokal). Kalau file belum ada, otomatis coba ambil dari Google Drive.

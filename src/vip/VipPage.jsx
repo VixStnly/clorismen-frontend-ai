@@ -5,6 +5,8 @@ import DestinationPicker, { destText, destValid } from '../components/Destinatio
 import { REVIEWS } from '../data.js';
 import { VIP, rp, waUrl } from './vipConfig.js';
 import { initPixel, track } from './pixel.js';
+import { takePaymentReturn, confirmPaymentReturn } from '../lib/paymentReturn.js';
+import { useWaNumber } from '../lib/waNumber.js';
 import './vip.css';
 
 /* Aset glossy hasil generate ulang: tools/make_vip_lux_images.py → images/vip-lux/ */
@@ -353,7 +355,7 @@ function ValueStack() {
 }
 
 /* ================= SECTION 6: Pilihan paket & form pemesanan ================= */
-// Pembayaran hanya lewat Midtrans (QRIS / Virtual Account). COD sudah dihapus.
+// Pembayaran lewat payment gateway yang aktif di ERP (Midtrans popup / iPaymu redirect). COD sudah dihapus.
 function Checkout({ onResult }) {
   const defaultIdx = Math.max(0, VIP.packages.findIndex((p) => p.hot));
   const [pkgIdx, setPkgIdx] = useState(defaultIdx);
@@ -402,6 +404,21 @@ function Checkout({ onResult }) {
     runSnap(d).catch(() => finish('manual', { code: d.code, total: d.total }));
   }
 
+  // Kembali dari halaman bayar iPaymu: konfirmasi status ke ERP lalu tampilkan hasilnya
+  useEffect(() => {
+    const ret = takePaymentReturn();
+    if (!ret) return;
+    onResult({ status: 'checking', code: ret.code });
+    confirmPaymentReturn(ret).then((r) => {
+      const slugs = (r.items || []).map((l) => l.slug);
+      const found = VIP.packages.find((p) => slugs.includes(p.slug)) || pkg;
+      if (r.status === 'paid') track('Purchase', { value: r.total || 0, currency: 'IDR', content_name: found.name }, false);
+      const retry = r.status === 'pending' && r.payUrl ? () => { window.location.href = r.payUrl; } : null;
+      onResult({ ...r, pkg: found, retry });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const submit = async (e) => {
     e.preventDefault();
     if (busy) return;
@@ -440,6 +457,8 @@ function Checkout({ onResult }) {
         customer: { name: name.trim().slice(0, 80), phone: wa.trim().slice(0, 30), note, source_url: window.location.href.slice(0, 250) },
       });
       const base = { code: data.code, total: data.total, waUrl: data.whatsapp_url || waFallback };
+      // iPaymu: pindah ke halaman bayar iPaymu, nanti kembali ke halaman ini dengan ?order=
+      if (!data.snap_token && data.redirect_url) { window.location.href = data.redirect_url; return undefined; }
       if (data.snap_token && data.client_key && data.snap_js_url) {
         try { await runSnap(data); return undefined; } catch {
           if (data.redirect_url) { window.location.href = data.redirect_url; return undefined; }
@@ -510,7 +529,7 @@ function Checkout({ onResult }) {
             <span className="vx-pay-ic"><i className="fa-solid fa-qrcode" /></span>
             <div>
               <b>QRIS / Virtual Account</b>
-              <span className="vx-muted">Bayar lewat Midtrans, konfirmasi otomatis</span>
+              <span className="vx-muted">Pembayaran resmi, konfirmasi otomatis</span>
               <span className="vx-pay-logos">QRIS · BCA · Mandiri · BNI · BRI · dan lainnya</span>
             </div>
             <i className="fa-solid fa-circle-check vx-pay-ok" />
@@ -562,11 +581,13 @@ const RESULT_COPY = {
   paid: { icon: 'fa-circle-check', tone: 'ok', title: 'Pembayaran Berhasil', text: 'Terima kasih! Pesanan kamu sudah kami terima dan segera diproses.' },
   pending: { icon: 'fa-clock', tone: 'warn', title: 'Menunggu Pembayaran', text: 'Selesaikan pembayaran QRIS / Virtual Account. Status pesanan diperbarui otomatis setelah lunas.' },
   cod: { icon: 'fa-circle-check', tone: 'ok', title: 'Pesanan COD Tercatat', text: 'Admin akan mengonfirmasi pesanan lewat WhatsApp. Siapkan uang pas saat kurir tiba.' },
+  checking: { icon: 'fa-spinner fa-spin', tone: 'warn', title: 'Mengecek Pembayaran…', text: 'Sebentar ya, kami sedang memastikan status pembayaran kamu.' },
   manual: { icon: 'fa-circle-info', tone: 'warn', title: 'Pesanan Tercatat', text: 'Pembayaran online belum aktif. Admin akan membantu menyelesaikan pesanan lewat WhatsApp.' },
   error: { icon: 'fa-circle-exclamation', tone: 'bad', title: 'Pesanan Belum Terkirim', text: '' },
 };
 
 function ThankYou({ result, onClose }) {
+  useWaNumber();
   useEffect(() => {
     if (!result) return undefined;
     const prev = document.body.style.overflow;
@@ -584,13 +605,13 @@ function ThankYou({ result, onClose }) {
       <div className="vx-modal-box">
         <button type="button" className="vx-modal-x" aria-label="Tutup" onClick={onClose}><i className="fa-solid fa-xmark" /></button>
         <div className={`vx-ty-icon ${c.tone}`}><i className={`fa-solid ${c.icon}`} /></div>
-        <h3>{c.title}</h3>
+        <h3>{result.title || c.title}</h3>
         <p className="vx-muted">{result.status === 'error' ? result.message : c.text}</p>
 
         {result.code ? (
           <div className="vx-ty-sum">
             <div><span>No. Order</span><b>#{result.code}</b></div>
-            <div><span>Paket</span><b>{result.pkg?.name}</b></div>
+            {result.pkg ? <div><span>Paket</span><b>{result.pkg.name}</b></div> : null}
             {result.total ? <div><span>Total</span><b>{rp(result.total)}</b></div> : null}
           </div>
         ) : null}
@@ -618,7 +639,7 @@ const FAQ = [
   { q: 'Apakah produknya aman dan terdaftar BPOM?', a: 'Ya. Seluruh produk dalam paket adalah kosmetik perawatan kulit yang terdaftar BPOM. Nomor registrasinya tercantum di kemasan dan di bagian bawah halaman ini.' },
   { q: 'Bagaimana cara klaim Bonus E-Book & Konsultasi Ahli Kesehatan Kulit?', a: 'Setelah pembayaran QRIS / Virtual Account terkonfirmasi, tombol download E-Book muncul di halaman konfirmasi dan link-nya juga dikirim lewat WhatsApp. Untuk Paket VIP Komplit, tombol Konsultasi muncul di halaman konfirmasi dan pesannya sudah berisi nomor order kamu.' },
   { q: 'Berapa lama estimasi pengiriman?', a: 'Pesanan diproses di hari kerja. Lama pengiriman mengikuti lokasi dan kurir. Nomor resi dikirim lewat WhatsApp setelah paket diserahkan ke kurir.' },
-  { q: 'Pembayarannya bisa pakai apa?', a: 'Pembayaran lewat Midtrans: QRIS (semua e-wallet & m-banking) atau Virtual Account bank (BCA, Mandiri, BNI, BRI, dan lainnya). Konfirmasi otomatis, jadi pesanan langsung diproses setelah lunas.' },
+  { q: 'Pembayarannya bisa pakai apa?', a: 'Pembayaran lewat payment gateway resmi: QRIS (semua e-wallet & m-banking) atau Virtual Account bank (BCA, Mandiri, BNI, BRI, dan lainnya). Konfirmasi otomatis, jadi pesanan langsung diproses setelah lunas.' },
 ];
 
 function Faq() {
@@ -668,12 +689,13 @@ const POLICY = {
     body: [
       'Harga dan bonus di halaman ini berlaku untuk pemesanan melalui halaman ini selama promo berlangsung dan dapat berubah sewaktu-waktu.',
       'Konsultasi Ahli Kesehatan Kulit bersifat edukasi perawatan kulit dan bukan pengganti pemeriksaan medis.',
-      'Pembayaran dilakukan lewat QRIS / Virtual Account (Midtrans). Pesanan dengan data tidak lengkap dapat dibatalkan.',
+      'Pembayaran dilakukan lewat QRIS / Virtual Account melalui payment gateway resmi. Pesanan dengan data tidak lengkap dapat dibatalkan.',
     ],
   },
 };
 
 function Footer({ onPolicy }) {
+  useWaNumber();
   return (
     <footer className="vx-footer">
       <img src={IMG.logo} alt="Clorismen" className="vx-footer-logo" width="140" height="76" loading="lazy" />

@@ -1,6 +1,8 @@
 import { CONFIG, rp, waLink } from '../config.js';
+import { useWaNumber } from '../lib/waNumber.js';
 
 export default function Closing() {
+  useWaNumber();
   return (
     <>
       <section className="sp closing" style={{background: "radial-gradient(60% 60% at 50% 100%,rgba(44,124,255,.25),transparent 70%),var(--bg2)"}}>

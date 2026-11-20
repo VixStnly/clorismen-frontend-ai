@@ -122,10 +122,14 @@ if ($method === 'POST') {
         bff_fail(400, 'invalid_json', 'Body JSON tidak valid.');
     }
 
-    $result = $client->request('POST', $target, [], [
-        'items' => array_slice(array_values(array_filter((array) ($payload['items'] ?? []), 'is_array')), 0, 20),
-        'customer' => (array) ($payload['customer'] ?? []),
-    ], $visitorIp, $visitorAgent);
+    $forward = str_ends_with($target, '/verify-payment')
+        ? array_filter(['trx_id' => preg_match('/^\d{1,20}$/', (string) ($payload['trx_id'] ?? '')) ? (string) $payload['trx_id'] : null])
+        : [
+            'items' => array_slice(array_values(array_filter((array) ($payload['items'] ?? []), 'is_array')), 0, 20),
+            'customer' => (array) ($payload['customer'] ?? []),
+        ];
+
+    $result = $client->request('POST', $target, [], $forward, $visitorIp, $visitorAgent);
 
     http_response_code($result['status']);
     echo $result['body'];

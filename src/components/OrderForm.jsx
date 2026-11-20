@@ -1,14 +1,17 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CONFIG, rp, waLink } from '../config.js';
 import { api } from '../lib/api.js';
 import { loadMidtransSnap } from '../lib/midtrans.js';
 import { useOrder } from '../state/OrderContext.jsx';
 import { track } from '../lib/pixel.js';
+import { takePaymentReturn, confirmPaymentReturn } from '../lib/paymentReturn.js';
 import ProdImg from './ProdImg.jsx';
 import DestinationPicker, { destText, destValid } from './DestinationPicker.jsx';
+import { useWaNumber } from '../lib/waNumber.js';
 
 /* Dialog hasil pesanan: memakai kelas .lightbox/.box yang sudah ada (tanpa gaya baru selain lebar, lihat checkout.css) */
 const STATUS_COPY = {
+  checking: { eyebrow: 'Mengecek Pembayaran', title: 'Sebentar Ya…', text: 'Kami sedang memastikan status pembayaran lo.' },
   paid: { eyebrow: 'Pembayaran Berhasil', title: 'Makasih, Pesanan Lo Masuk!', text: 'Pembayaran sudah kami terima. Admin akan konfirmasi lewat WhatsApp dan kirim ebook-nya.' },
   pending: { eyebrow: 'Menunggu Pembayaran', title: 'Pesanan Dibuat', text: 'Selesaikan pembayarannya, status pesanan otomatis diperbarui. Kalau butuh bantuan, chat admin lewat WhatsApp.' },
   cod: { eyebrow: 'Pesanan Dicatat', title: 'Konfirmasi Lewat WhatsApp', text: 'Untuk COD, admin akan konfirmasi pesanan & ongkirnya lewat WhatsApp. Klik tombol di bawah untuk lanjut.' },
@@ -17,6 +20,7 @@ const STATUS_COPY = {
 };
 
 function ResultDialog({ result, onClose, onRetryPay }) {
+  useWaNumber();
   const open = !!result;
   const copy = result ? STATUS_COPY[result.status] : STATUS_COPY.error;
   return (
@@ -27,7 +31,7 @@ function ResultDialog({ result, onClose, onRetryPay }) {
         {open ? (
           <div className="txt">
             <div className="eyebrow">{copy.eyebrow}</div>
-            <div className="h2" style={{ fontSize: '30px' }}>{copy.title}</div>
+            <div className="h2" style={{ fontSize: '30px' }}>{result?.title || copy.title}</div>
             <p style={{ color: 'var(--muted)' }}>{result.status === 'error' ? result.message : copy.text}</p>
             {result.code ? (
               <div className="sum-code" style={{ fontWeight: 800 }}>
@@ -38,6 +42,9 @@ function ResultDialog({ result, onClose, onRetryPay }) {
             ) : null}
             {result.status === 'pending' && result.snapToken ? (
               <button type="button" className="btn btn-primary" onClick={onRetryPay}>Lanjut Bayar <i className="fa-solid fa-lock" /></button>
+            ) : null}
+            {result.status === 'pending' && !result.snapToken && result.payUrl ? (
+              <a href={result.payUrl} className="btn btn-primary">Lanjut Bayar <i className="fa-solid fa-lock" /></a>
             ) : null}
             <a href={result.waUrl || waLink()} target="_blank" rel="noopener" className={`btn ${result.status === 'cod' || result.status === 'manual' || result.status === 'error' ? 'btn-primary' : 'btn-ghost'}`}>
               <i className="fa-brands fa-whatsapp" /> Chat Admin via WhatsApp
@@ -71,6 +78,15 @@ export function OrderForm() {
     if (status === 'paid' || status === 'cod') track('Purchase', { value: extra.total || 0, currency: 'IDR', content_name: 'Clean Skin Series' }, false);
   };
   const startCheckout = () => track('InitiateCheckout', { content_name: 'Clean Skin Series', currency: 'IDR' });
+
+  // Kembali dari halaman bayar iPaymu: konfirmasi status ke ERP lalu tampilkan hasilnya
+  useEffect(() => {
+    const ret = takePaymentReturn();
+    if (!ret) return;
+    setResult({ status: 'checking', code: ret.code });
+    confirmPaymentReturn(ret).then((r) => finish(r.status, r));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const runSnap = async (data, pkgLabel) => {
     const snap = await loadMidtransSnap(data.snap_js_url, data.client_key);
@@ -121,6 +137,9 @@ export function OrderForm() {
       const base = { code: data.code, total: data.total, waUrl: data.whatsapp_url || waFallback };
 
       if (pay === 'COD') return finish('cod', base);
+
+      // iPaymu: pindah ke halaman bayar iPaymu, nanti kembali ke landing dengan ?order=
+      if (!data.snap_token && data.redirect_url) { window.location.href = data.redirect_url; return undefined; }
 
       if (data.snap_token && data.client_key && data.snap_js_url) {
         try {

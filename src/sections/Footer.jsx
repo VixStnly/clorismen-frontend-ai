@@ -1,6 +1,8 @@
 import { CONFIG, rp, waLink } from '../config.js';
+import { useWaNumber } from '../lib/waNumber.js';
 
 export default function Footer() {
+  useWaNumber();
   return (
     <>
       <footer>

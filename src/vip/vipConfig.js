@@ -2,8 +2,10 @@
    KONFIGURASI HALAMAN /vip-paket-clorismen — ubah di sini
    Semua angka bertanda "GANTI" masih CONTOH. Wajib dikoreksi sebelum iklan jalan.
    ========================================================= */
+import { waHref } from '../lib/waNumber.js';
+
 export const VIP = {
-  waNumber: '6285217866413',
+  // Nomor WA admin diambil dari ERP (Landing Page CMS → Brand), lihat src/lib/waNumber.js
 
   // Pilihan paket. `slug` = slug produk di ERP (Master Produk). Harga di ERP harus sama dengan `price`,
   // karena total pembayaran Midtrans selalu dihitung ulang dari database ERP.
@@ -80,4 +82,4 @@ export const VIP = {
 };
 
 export const rp = (n) => 'Rp' + Number(n || 0).toLocaleString('id-ID');
-export const waUrl = (txt) => `https://wa.me/${VIP.waNumber}?text=${encodeURIComponent(txt)}`;
+export const waUrl = (txt) => waHref(txt);
