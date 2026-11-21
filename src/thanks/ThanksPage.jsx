@@ -54,7 +54,7 @@ async function verify(token, trxId) {
 function trackPurchaseOnce(token, d) {
   const key = `clm_purchase_${token.slice(0, 12)}`;
   try { if (window.localStorage.getItem(key)) return; window.localStorage.setItem(key, '1'); } catch { /* private mode */ }
-  track('Purchase', { value: d.total || 0, currency: 'IDR', content_name: d.source === 'vip' ? 'Paket VIP Clorismen' : 'Clean Skin Series' }, false);
+  track('Purchase', { value: d.total || 0, currency: 'IDR', content_name: d.source === 'vip' ? 'Paket VIP Clorismen' : d.source === 'skin-check' ? 'Paket Skin Check Clorismen' : 'Clean Skin Series' }, false);
 }
 
 export default function ThanksPage() {
@@ -101,7 +101,7 @@ export default function ThanksPage() {
 
   const c = COPY[state] || COPY.error;
   const isVip = d?.source === 'vip';
-  const backHref = isVip ? '/vip-paket-clorismen' : '/';
+  const backHref = isVip ? '/vip-paket-clorismen' : d?.source === 'skin-check' ? '/konsultan-clorismen' : '/';
   const code = d?.code;
   const adminText = code ? `Halo admin Clorismen, saya sudah order dengan No. Order #${code}` : 'Halo admin Clorismen, saya butuh bantuan soal pesanan saya';
   const consultText = `Halo Tim Ahli Kulit Clorismen, saya pembeli Paket VIP dengan No. Order #${code}, ingin konsultasi kondisi kulit saya`;

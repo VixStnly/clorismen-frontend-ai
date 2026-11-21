@@ -1,15 +1,31 @@
-import { CONFIG, rp, waLink } from '../config.js';
-import { useWaNumber } from '../lib/waNumber.js';
+import { rp, waLink } from '../config.js';
+import { useBrand, useWaNumber, fmtWa, brandSocials } from '../lib/waNumber.js';
+import { useMainPrice } from '../lib/catalog.js';
 
 export default function Footer() {
-  useWaNumber();
+  const wa = useWaNumber();
+  const brand = useBrand(); // diatur di ERP: Landing Page CMS → Brand
+  const main = useMainPrice();
+  const name = brand?.name || 'Clorismen';
+  const socials = brandSocials(brand);
   return (
     <>
       <footer>
         <div className="wrap inner">
-          <img src="/images/opt/logo-white.webp" alt="Clorismen" loading="lazy" decoding="async" />
-          <span>© 2026 Clorismen Official · Skincare untuk kulit cowok Indonesia sejak 2016</span>
+          <img src="/images/opt/logo-white.webp" alt={name} loading="lazy" decoding="async" />
+          <span>© {new Date().getFullYear()} {name} Official · {brand?.tagline || 'Skincare untuk kulit cowok Indonesia sejak 2016'}</span>
         </div>
+        <div className="wrap foot-contact">
+          {brand?.address ? <span><i className="fa-solid fa-location-dot" /> {brand.address}</span> : null}
+          {brand?.email ? <a href={`mailto:${brand.email}`}><i className="fa-solid fa-envelope" /> {brand.email}</a> : null}
+          <a href={waLink()} target="_blank" rel="noopener"><i className="fa-brands fa-whatsapp" /> {brand?.whatsapp_display || fmtWa(wa)}</a>
+          {socials.length ? (
+            <span className="foot-social">
+              {socials.map((s) => <a key={s.href} href={s.href} target="_blank" rel="noopener" aria-label={s.label} title={s.label}><i className={s.icon} /></a>)}
+            </span>
+          ) : null}
+        </div>
+        {brand?.footer_note ? <p className="wrap foot-note">{brand.footer_note}</p> : null}
         <nav className="wrap foot-links" aria-label="Informasi">
           <a href="/faq">FAQ</a>
           <a href="/refund-policy">Kebijakan Refund</a>
@@ -21,7 +37,7 @@ export default function Footer() {
       </footer>
 
       <a className="wa-fab" href={waLink()} target="_blank" rel="noopener" aria-label="Chat admin via WhatsApp"><i className="fa-brands fa-whatsapp"></i></a>
-      <div className="mbar" id="mbar"><div className="pp"><s>Rp332.000</s><b>{rp(CONFIG.price)}</b></div><a href="#order" className="btn btn-primary">Pesan Sekarang</a></div>
+      <div className="mbar" id="mbar"><div className="pp">{main.compare ? <s>{rp(main.compare)}</s> : null}<b>{rp(main.price)}</b></div><a href="#order" className="btn btn-primary">Pesan Sekarang</a></div>
     </>
   );
 }

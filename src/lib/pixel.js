@@ -30,3 +30,12 @@ export function track(event, params = {}, once = true) {
   fired.add(event);
   window.fbq('track', event, params);
 }
+
+/** Event custom (mis. tahap Skin Check). Jangan kirim jawaban/kondisi kulit pembeli sebagai parameter. */
+export function trackCustom(event, params = {}, once = true) {
+  if (!PIXEL_ID || typeof window === 'undefined' || !window.fbq) return;
+  const key = `custom:${event}`;
+  if (once && fired.has(key)) return;
+  fired.add(key);
+  window.fbq('trackCustom', event, params);
+}

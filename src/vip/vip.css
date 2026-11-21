@@ -709,3 +709,25 @@ body { margin: 0; background: #f3efe6; }
 /* Paket stok habis (status stok dari ERP / Master Produk) */
 .vx-pkg.is-out { opacity: .55; filter: grayscale(.6); cursor: not-allowed; }
 .vx-ribbon.vx-ribbon-out { background: linear-gradient(180deg, #8a93a3, #5b6474); box-shadow: none; animation: none; }
+/* Footer: kontak dari ERP (Landing Page CMS → Brand) */
+.vx-footer-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; }
+.vx-footer-contact a { color: var(--muted); text-decoration: none; }
+.vx-footer-contact i { color: var(--goldtxt); margin-right: 4px; }
+.vx-footer-social { display: flex; justify-content: center; gap: 16px; margin-top: 10px; font-size: 18px; }
+.vx-footer-social a { color: var(--ink2); }
+.vx-footer-note { font-size: 13px; color: var(--muted); margin-top: 10px; }
+/* Baris logo + VIP ACCESS + Member: tetap satu baris di HP */
+.vx-brandrow { gap: 10px; }
+.vx-logo { flex-shrink: 0; }
+.vx-brandright { flex-wrap: nowrap; min-width: 0; }
+.vx-vipchip, .vx-memberlink { white-space: nowrap; flex-shrink: 0; }
+@media (max-width: 400px) {
+  .vx-logo { width: 78px; }
+  .vx-brandright { gap: 6px; }
+  .vx-vipchip { gap: 5px; padding: 6px 10px; font-size: 10px; letter-spacing: .12em; }
+  .vx-memberlink { gap: 5px; padding: 6px 10px; font-size: 12px; }
+}
+@media (max-width: 340px) {
+  .vx-vipchip { letter-spacing: .06em; padding: 6px 8px; }
+  .vx-memberlink { padding: 6px 8px; }
+}

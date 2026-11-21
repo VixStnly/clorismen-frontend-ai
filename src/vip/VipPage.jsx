@@ -6,7 +6,7 @@ import { REVIEWS } from '../data.js';
 import { VIP, rp, waUrl } from './vipConfig.js';
 import { initPixel, track } from './pixel.js';
 import { goThanks } from '../lib/thanks.js';
-import { useWaNumber } from '../lib/waNumber.js';
+import { useWaNumber, useBrand, fmtWa, brandSocials } from '../lib/waNumber.js';
 import { useCatalog } from '../lib/catalog.js';
 import PurchaseToast from '../components/PurchaseToast.jsx';
 import './vip.css';
@@ -707,16 +707,33 @@ const POLICY = {
 };
 
 function Footer({ onPolicy }) {
-  useWaNumber();
+  const wa = useWaNumber();
+  const brand = useBrand(); // diatur di ERP: Landing Page CMS → Brand
+  const name = brand?.name || 'Clorismen';
+  const address = brand?.address || (/^\[/.test(VIP.legal.address) ? '' : VIP.legal.address);
+  const socials = brandSocials(brand);
+  const bpom = VIP.legal.bpom.filter((b) => b.no && !/^\[/.test(b.no));
   return (
     <footer className="vx-footer">
-      <img src={IMG.logo} alt="Clorismen" className="vx-footer-logo" width="140" height="76" loading="lazy" />
-      <p className="vx-footer-company">{VIP.legal.company}</p>
-      <p className="vx-footer-addr"><i className="fa-solid fa-location-dot" /> {VIP.legal.address}</p>
-      <div className="vx-bpom">
-        <b>Nomor Registrasi BPOM</b>
-        <ul>{VIP.legal.bpom.map((b) => <li key={b.name}><span>{b.name}</span><span>{b.no}</span></li>)}</ul>
-      </div>
+      <img src={IMG.logo} alt={name} className="vx-footer-logo" width="140" height="76" loading="lazy" />
+      <p className="vx-footer-company">{name} Official</p>
+      {address ? <p className="vx-footer-addr"><i className="fa-solid fa-location-dot" /> {address}</p> : null}
+      <p className="vx-footer-addr vx-footer-contact">
+        {brand?.email ? <a href={`mailto:${brand.email}`}><i className="fa-solid fa-envelope" /> {brand.email}</a> : null}
+        <a href={waUrl('Halo admin Clorismen, saya mau tanya soal Paket VIP')} target="_blank" rel="noopener"><i className="fa-brands fa-whatsapp" /> {brand?.whatsapp_display || fmtWa(wa)}</a>
+      </p>
+      {socials.length ? (
+        <p className="vx-footer-social">
+          {socials.map((x) => <a key={x.href} href={x.href} target="_blank" rel="noopener" aria-label={x.label} title={x.label}><i className={x.icon} /></a>)}
+        </p>
+      ) : null}
+      {brand?.footer_note ? <p className="vx-footer-note">{brand.footer_note}</p> : null}
+      {bpom.length ? (
+        <div className="vx-bpom">
+          <b>Nomor Registrasi BPOM</b>
+          <ul>{bpom.map((b) => <li key={b.name}><span>{b.name}</span><span>{b.no}</span></li>)}</ul>
+        </div>
+      ) : null}
       <div className="vx-footer-links">
         <a href="/faq">FAQ</a>
         <span>·</span>
@@ -734,7 +751,7 @@ function Footer({ onPolicy }) {
         Hasil pemakaian dapat bervariasi pada setiap individu tergantung jenis kulit dan keteraturan penggunaan.
         Produk ini merupakan kosmetik perawatan kulit terdaftar BPOM dan bukan obat medis.
       </p>
-      <p className="vx-copy">© {new Date().getFullYear()} Clorismen Official</p>
+      <p className="vx-copy">© {new Date().getFullYear()} {name} Official</p>
     </footer>
   );
 }

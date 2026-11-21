@@ -6,6 +6,8 @@ const path = window.location.pathname.replace(/\/+$/, '').toLowerCase();
 const LEGAL = ['/faq', '/refund-policy', '/terms-and-conditions', '/privacy-policy', '/kontak'];
 const load = path === '/vip-paket-clorismen'
   ? import('./vip/VipPage.jsx')
+  : (path === '/konsultan-clorismen' || path === '/skin-check')
+    ? import('./skincheck/SkinCheckPage.jsx') // Skin Check: pilih jawaban → rekomendasi paket → checkout
   : path.startsWith('/terima-kasih/')
     ? import('./thanks/ThanksPage.jsx') // halaman terima kasih ber-token (landing utama & VIP)
   : path === '/member'

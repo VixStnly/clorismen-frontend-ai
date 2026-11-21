@@ -19,6 +19,8 @@ const readCache = () => {
 };
 
 let current = (typeof window !== 'undefined' && readCache()) || EMERGENCY_FALLBACK;
+// Data Brand lengkap dari ERP (Landing Page CMS → Brand): nama, alamat, email, sosial media, catatan footer.
+let brand = null;
 let loading = null;
 const listeners = new Set();
 
@@ -29,7 +31,12 @@ export function loadWaNumber() {
   loading = fetch('/bff/config', { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
     .then((r) => r.json())
     .then((j) => {
-      const n = clean(j?.data?.content?.brand?.whatsapp_number);
+      const b = j?.data?.content?.brand;
+      if (b && typeof b === 'object') {
+        brand = b;
+        listeners.forEach((fn) => fn());
+      }
+      const n = clean(b?.whatsapp_number);
       if (!n) return;
       try { window.localStorage.setItem(CACHE_KEY, n); } catch { /* mode privat */ }
       if (n !== current) {
@@ -48,5 +55,28 @@ export function useWaNumber() {
   useEffect(() => { loadWaNumber(); }, []);
   return useSyncExternalStore(subscribe, getWaNumber, getWaNumber);
 }
+
+const getBrand = () => brand;
+
+/** Data Brand dari ERP untuk footer (null selama belum termuat). */
+export function useBrand() {
+  useEffect(() => { loadWaNumber(); }, []);
+  useSyncExternalStore(subscribe, getWaNumber, getWaNumber);
+  return useSyncExternalStore(subscribe, getBrand, getBrand);
+}
+
+/** 6281234567890 → 0812-3456-7890 */
+export const fmtWa = (n) => {
+  const d = String(n || '').replace(/^62/, '0');
+  return d.replace(/^(\d{4})(\d{4})(\d+)$/, '$1-$2-$3');
+};
+
+/** Link sosial media / marketplace Brand yang sudah diisi di ERP. */
+export const brandSocials = (b) => [
+  ['instagram_url', 'fa-brands fa-instagram', 'Instagram'],
+  ['tiktok_url', 'fa-brands fa-tiktok', 'TikTok'],
+  ['shopee_url', 'fa-solid fa-bag-shopping', 'Shopee'],
+  ['tiktokshop_url', 'fa-solid fa-store', 'TikTok Shop'],
+].filter(([k]) => /^https?:\/\//i.test(String(b?.[k] || ''))).map(([k, icon, label]) => ({ href: b[k], icon, label }));
 
 export const waHref = (txt) => `https://wa.me/${current}?text=${encodeURIComponent(txt)}`;
