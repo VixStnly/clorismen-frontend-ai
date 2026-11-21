@@ -554,3 +554,12 @@ body { background: #eef2f7; }
 
 .sc-proc-title .sc-dots { display: flex; justify-content: center; margin: 10px 0 0; }
 .sc-dots i { width: 6px; height: 6px; }
+
+/* Paket 4 produk (Clean Skin Series) di kartu hasil & checkout */
+.sc-stage[data-count="4"]:not(.is-big):not(.is-compact) { height: 300px; }
+.sc-stage.is-compact[data-count="4"] .sc-stage-row { inset: 6px 4px 16px; }
+.sc-stage.is-compact[data-count="4"] .sc-stage-podium { bottom: 8px; }
+.sc-stage.is-compact[data-count="4"] .sc-prod + .sc-prod { margin-left: -6%; }
+@media (max-width: 520px) {
+  .sc-stage[data-count="4"]:not(.is-big):not(.is-compact) { height: 290px; }
+}

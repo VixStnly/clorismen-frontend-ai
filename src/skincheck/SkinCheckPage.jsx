@@ -36,11 +36,12 @@ function usePackages() {
     const exists = !!e && price > 0;
     return {
       ...p,
-      title: String(e?.landing_title || '').trim() || p.name,
-      desc: String(e?.tagline || '').trim() || p.desc,
+      // Paket landing utama punya judul kartu "1 Paket" di ERP; di Skin Check pakai nama & deskripsi dari config.
+      title: p.erpText === false ? p.name : String(e?.landing_title || '').trim() || p.name,
+      desc: p.erpText === false ? p.desc : String(e?.tagline || '').trim() || p.desc,
       price,
       compare,
-      image: uploadedImage(e?.image_url),
+      image: p.photo === false ? null : uploadedImage(e?.image_url),
       exists,
       inStock: exists && e.in_stock !== false,
     };
@@ -103,8 +104,12 @@ function Consultant({ small }) {
   );
 }
 
+/** Urutan tampil di panggung: micellar (paling tinggi) di tengah seperti hero landing utama. */
+const STAGE_ORDER = ['facewash', 'micellar', 'serum', 'sunscreen'];
+
 /** Panggung produk beranimasi (foto produk asli, animasi CSS ringan; mati otomatis bila "kurangi gerakan" aktif). */
 function PackShot({ pkg, big, compact, tags }) {
+  const shown = [...pkg.items].sort((a, b) => STAGE_ORDER.indexOf(a) - STAGE_ORDER.indexOf(b));
   if (pkg.image) {
     return (
       <div className={`sc-stage${big ? ' is-big' : ''}${compact ? ' is-compact' : ''}`}>
@@ -122,7 +127,7 @@ function PackShot({ pkg, big, compact, tags }) {
       {compact ? null : <span className="sc-stage-bubbles" aria-hidden="true"><i /><i /><i /><i /><i /><i /></span>}
       <span className="sc-stage-podium" aria-hidden="true" />
       <div className="sc-stage-row">
-        {pkg.items.map((k, i) => {
+        {shown.map((k, i) => {
           const p = PRODUCTS[k];
           return (
             <figure key={k} className={`sc-prod sc-prod-${k}`} style={{ '--d': `${i * 0.45}s` }}>
@@ -134,7 +139,7 @@ function PackShot({ pkg, big, compact, tags }) {
       </div>
       {tags && !compact ? (
         <div className="sc-stage-tags" aria-hidden="true">
-          {pkg.items.map((k, i) => <span key={k} className={`sc-tag sc-tag-${i}`}><i className={`fa-solid ${PRODUCTS[k].tagIcon}`} /> {PRODUCTS[k].tag}</span>)}
+          {shown.map((k, i) => <span key={k} className={`sc-tag sc-tag-${i}`}><i className={`fa-solid ${PRODUCTS[k].tagIcon}`} /> {PRODUCTS[k].tag}</span>)}
         </div>
       ) : null}
     </div>

@@ -20,6 +20,9 @@ export const PACKAGES = [
   { id: 'starter', slug: 'skin-check-starter-kit', name: 'Starter Kit', items: ['facewash'], desc: 'Satu langkah untuk mulai rutinitas cuci wajah yang konsisten.' },
   { id: 'daily', slug: 'skin-check-daily-protection-kit', name: 'Daily Protection Kit', items: ['facewash', 'sunscreen'], desc: 'Dua langkah: bersihkan wajah, lalu lindungi dari sinar matahari.' },
   { id: 'complete', slug: 'skin-check-complete-upgrade-kit', name: 'Complete Upgrade Kit', items: ['facewash', 'serum', 'sunscreen'], desc: 'Tiga produk untuk rutinitas pagi dan malam yang lebih lengkap.' },
+  // Paket landing utama (4 produk). Harga & stok dari ERP. Judul kartu di ERP "1 Paket" (untuk landing), jadi
+  // `erpText: false` = nama & deskripsi dari sini; `photo: false` = selalu tampil susunan 4 produk, bukan foto paket.
+  { id: 'cleanskin', slug: 'clean-skin-series-1-paket', name: 'Clean Skin Series', erpText: false, photo: false, items: ['micellar', 'facewash', 'serum', 'sunscreen'], desc: 'Rutinitas paling lengkap: micellar buat angkat kotoran, sunscreen & minyak tanpa bilas, lalu cuci muka, serum, dan sunscreen.' },
 ];
 
 export const QUESTIONS = [
@@ -95,10 +98,16 @@ export function cleanAnswers(raw) {
 
 export const optionOf = (qid, v) => QUESTIONS.find((q) => q.id === qid)?.options.find((o) => o.v === v);
 
-/** Aturan rekomendasi yang sudah dipetakan: jawaban → id paket. */
+/**
+ * Aturan rekomendasi yang sudah dipetakan (bukan AI): jawaban → id paket.
+ * - Clean Skin Series (4 produk): 3 langkah DAN (sering di luar ruangan ATAU sudah pakai beberapa produk).
+ * - Complete Upgrade Kit (3 produk): 3 langkah lainnya, atau 2 langkah + fokus wajah cerah + sudah pakai beberapa produk.
+ * - Daily Protection Kit (2 produk): 2 langkah lainnya, atau 1 langkah tapi sering di luar / fokus perlindungan UV.
+ * - Starter Kit (1 produk): 1 langkah lainnya.
+ */
 export function recommend(a) {
   const steps = Number(a.steps || 2);
-  if (steps >= 3) return 'complete';
+  if (steps >= 3) return a.activity === 'outdoor' || a.routine === 'more' ? 'cleanskin' : 'complete';
   if (steps === 2) return a.goal === 'bright' && a.routine === 'more' ? 'complete' : 'daily';
   // 1 langkah: tetap disarankan sunscreen kalau sering di luar atau fokusnya perlindungan
   return a.activity === 'outdoor' || a.goal === 'protect' ? 'daily' : 'starter';
@@ -115,6 +124,16 @@ export function reasons(a, pkgId) {
     dry: 'Power Face Wash dipakai secukupnya untuk membersihkan wajah; bilas tuntas dan jangan digosok terlalu keras.',
     normal: 'Power Face Wash jadi langkah dasar supaya wajah bersih setiap pagi dan malam.',
   };
+  if (has('micellar')) {
+    out.push(a.activity === 'outdoor'
+      ? 'Lu sering di luar, jadi malamnya Micellar Water Spray dipakai duluan buat angkat sisa sunscreen, debu, dan keringat tanpa bilas, baru cuci muka.'
+      : 'Lu udah biasa pakai beberapa produk, jadi Micellar Water Spray jadi pembersih pertama di malam hari (tanpa bilas) sebelum cuci muka.');
+    out.push(wash[a.skin] || wash.normal);
+    out.push(a.goal === 'bright'
+      ? 'Brightening Serum di malam hari mendukung fokus lu supaya wajah tampak lebih cerah, dan Pro Sunscreen jaga wajah tiap pagi.'
+      : 'Malamnya Brightening Serum, paginya Pro Sunscreen. Empat produk ini saling melengkapi dari pagi sampai malam.');
+    return out;
+  }
   out.push(wash[a.skin] || wash.normal);
   if (has('sunscreen')) {
     out.push(a.activity === 'outdoor'
@@ -145,6 +164,7 @@ export function consultantNote(a, pkgId) {
     starter: 'mulai dari satu langkah dulu: cuci wajah pagi dan malam dengan rutin',
     daily: 'cukup dua langkah: bersihkan wajah, lalu pakai sunscreen sebelum keluar',
     complete: 'pakai rutinitas lengkap: face wash dan sunscreen di pagi hari, lalu serum di malam hari',
+    cleanskin: 'langsung pakai rutinitas paling lengkap: pagi face wash dan sunscreen, malam micellar buat angkat kotoran dan sunscreen, cuci muka, lalu serum',
   }[pkgId];
   return `Karena lu ${act} dan pengin ${goal}, saran gue ${plan}.`;
 }
@@ -157,8 +177,10 @@ export function routineFor(pkgId) {
     morning: [
       'Bilas wajah, lalu pijat Power Face Wash ± 30 detik dan bilas sampai bersih.',
       has('sunscreen') ? 'Oleskan Pro Sunscreen merata ± 15 menit sebelum keluar; ulangi bila lama di luar.' : 'Kalau siang mau lama di luar, pertimbangkan tambah sunscreen.',
+      ...(has('micellar') ? ['Siang habis aktivitas di luar? Usap wajah pakai Micellar Water di kapas biar segar lagi, tanpa bilas.'] : []),
     ],
     night: [
+      ...(has('micellar') ? ['Semprot Micellar Water Spray ke kapas, usap wajah buat angkat sisa sunscreen, debu, dan minyak (tanpa bilas).'] : []),
       'Cuci wajah lagi dengan Power Face Wash untuk mengangkat kotoran seharian.',
       has('serum') ? 'Teteskan 2–3 tetes Brightening Serum, ratakan, lalu biarkan meresap.' : 'Cukup sampai di sini. Konsisten lebih penting daripada banyak produk.',
     ],
@@ -168,7 +190,7 @@ export function routineFor(pkgId) {
 // Pertanyaan cepat setelah hasil. Jawaban sudah disiapkan tim Clorismen (bukan chat AI).
 export const QUICK_QA = [
   { q: 'Kenapa gue dapat paket ini?', a: (ctx) => `Dari jawaban lu (${ctx.summary}), paket ${ctx.pkgName} paling pas dengan jumlah langkah yang lu pilih. Lu tetap bebas ganti ke paket lain.` },
-  { q: 'Cara pakainya gimana?', a: (ctx) => `${ctx.pkgName}: pagi pakai face wash${ctx.has('sunscreen') ? ', lalu sunscreen sebelum keluar' : ''}. Malam cuci muka lagi${ctx.has('serum') ? ', lalu 2–3 tetes serum' : ''}. Ikuti juga petunjuk di kemasan.` },
+  { q: 'Cara pakainya gimana?', a: (ctx) => `${ctx.pkgName}: pagi pakai face wash${ctx.has('sunscreen') ? ', lalu sunscreen sebelum keluar' : ''}. Malam ${ctx.has('micellar') ? 'usap micellar di kapas dulu (tanpa bilas), lalu ' : ''}cuci muka lagi${ctx.has('serum') ? ', lalu 2–3 tetes serum' : ''}. Ikuti juga petunjuk di kemasan.` },
   { q: 'Kalau kulit gue sensitif?', a: () => 'Jangan langsung pakai semua produk sekaligus. Cek komposisi di kemasan, coba sedikit dulu di area kecil, dan hentikan pemakaian bila terasa perih atau iritasi. Kalau keluhannya berat, konsultasikan ke dokter.' },
   { q: 'Berapa lama sampai kelihatan hasilnya?', a: () => 'Setiap kulit berbeda, jadi kami tidak menjanjikan hasil dalam waktu tertentu. Yang paling berpengaruh adalah konsistensi: pakai rutin minimal 30 hari sambil jaga tidur dan minum air.' },
 ];
