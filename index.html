@@ -14,6 +14,8 @@
   var LEGAL = ['/faq', '/refund-policy', '/terms-and-conditions', '/privacy-policy', '/kontak'];
   var L = LEGAL.indexOf(p) !== -1 || p === '/member'
     ? [['/images/opt/logo-white.webp']]
+    : (p === '/konsultan-clorismen' || p === '/skin-check')
+    ? [['/images/opt/logo-white.webp'], ['/images/opt/prod-micellar.webp'], ['/images/opt/prod-facewash.webp'], ['/images/opt/prod-sunscreen.webp'], ['/images/opt/prod-serum.webp']]
     : p === '/vip-paket-clorismen'
     ? [
         ['/images/opt/vip-hero-bundle.webp', '/images/opt/vip-hero-bundle-600.webp 600w, /images/opt/vip-hero-bundle.webp 1000w', '(min-width: 960px) 560px, 100vw'],
