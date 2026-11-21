@@ -22,7 +22,7 @@ export const PACKAGES = [
   { id: 'complete', slug: 'skin-check-complete-upgrade-kit', name: 'Complete Upgrade Kit', items: ['facewash', 'serum', 'sunscreen'], desc: 'Tiga produk untuk rutinitas pagi dan malam yang lebih lengkap.' },
   // Paket landing utama (4 produk). Harga & stok dari ERP. Judul kartu di ERP "1 Paket" (untuk landing), jadi
   // `erpText: false` = nama & deskripsi dari sini; `photo: false` = selalu tampil susunan 4 produk, bukan foto paket.
-  { id: 'cleanskin', slug: 'clean-skin-series-1-paket', name: 'Clean Skin Series', erpText: false, photo: false, items: ['micellar', 'facewash', 'serum', 'sunscreen'], desc: 'Rutinitas paling lengkap: micellar buat angkat kotoran, sunscreen & minyak tanpa bilas, lalu cuci muka, serum, dan sunscreen.' },
+  { id: 'cleanskin', slug: 'clean-skin-series-1-paket', name: 'Clean Skin Series', erpText: false, photo: false, items: ['micellar', 'facewash', 'serum', 'sunscreen'], desc: 'Rutinitas paling lengkap. Pagi: cuci muka, lalu sunscreen. Malam: micellar dulu buat angkat sisa sunscreen & kotoran tanpa bilas, lalu cuci muka dan serum.' },
 ];
 
 export const QUESTIONS = [
@@ -162,9 +162,9 @@ export function consultantNote(a, pkgId) {
   const goal = { clean: 'wajah bersih dan segar', protect: 'wajah terlindungi dari matahari', bright: 'wajah tampak lebih cerah', start: 'mulai rutinitas yang benar' }[a.goal] || 'rutinitas yang simpel';
   const plan = {
     starter: 'mulai dari satu langkah dulu: cuci wajah pagi dan malam dengan rutin',
-    daily: 'cukup dua langkah: bersihkan wajah, lalu pakai sunscreen sebelum keluar',
-    complete: 'pakai rutinitas lengkap: face wash dan sunscreen di pagi hari, lalu serum di malam hari',
-    cleanskin: 'langsung pakai rutinitas paling lengkap: pagi face wash dan sunscreen, malam micellar buat angkat kotoran dan sunscreen, cuci muka, lalu serum',
+    daily: 'cukup dua langkah: pagi cuci muka lalu pakai sunscreen sebelum keluar, malam cukup cuci muka',
+    complete: 'pakai rutinitas lengkap: pagi cuci muka lalu pakai sunscreen sebelum keluar, malam cuci muka lalu pakai serum',
+    cleanskin: 'langsung pakai rutinitas paling lengkap: pagi cuci muka lalu pakai sunscreen sebelum keluar, malam bersihin wajah pakai micellar dulu biar sisa sunscreen dan kotoran seharian keangkat, lalu cuci muka dan pakai serum',
   }[pkgId];
   return `Karena lu ${act} dan pengin ${goal}, saran gue ${plan}.`;
 }
