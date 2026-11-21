@@ -12,6 +12,22 @@ export const PROVINCES = [
   'Maluku', 'Maluku Utara', 'Papua', 'Papua Barat', 'Papua Barat Daya', 'Papua Selatan', 'Papua Tengah', 'Papua Pegunungan',
 ];
 
+const norm = (v) => String(v || '').toLowerCase().replace(/[^a-z]/g, '');
+const titleCase = (v = '') => v.toLowerCase().replace(/(^|[\s(/-])([a-z])/g, (m, a, b) => a + b.toUpperCase()).replace(/\b(Dki|Di)\b/g, (m) => m.toUpperCase());
+
+/** Hasil pencarian kecamatan (RajaOngkir) → isian provinsi/kota/kecamatan/kode pos. */
+export function areaToShip(d) {
+  const prov = PROVINCES.find((pv) => norm(pv) === norm(d.province)
+    || norm(pv) === norm(d.province).replace(/^daerahistimewa/, 'di').replace(/^nanggroeacehdarussalam.*/, 'aceh'))
+    || (norm(d.province) === 'bangkabelitung' ? 'Kepulauan Bangka Belitung' : '');
+  return {
+    province: prov,
+    city: titleCase(d.city),
+    district: titleCase(d.district),
+    postal: /^\d{5}$/.test(d.zip || '') ? d.zip : '',
+  };
+}
+
 export const EMPTY_SHIP = { email: '', province: '', city: '', district: '', postal: '', addr: '' };
 
 export const emailOk = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());

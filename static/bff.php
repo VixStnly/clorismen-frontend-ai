@@ -73,6 +73,7 @@ $routes = [
     ['GET', '#^products$#', 'products', 30],
     ['GET', '#^products/([a-z0-9-]{1,120})$#', 'products/%s', 30],
     ['GET', '#^reviews$#', 'reviews', 120],
+    ['GET', '#^destinations$#', 'destinations', 86400], // cari kecamatan (RajaOngkir) untuk isi otomatis alamat, cache per kata kunci
     ['GET', '#^recent-purchases$#', 'recent-purchases', 20], // notifikasi pembeli terbaru; cache pendek supaya order web baru cepat muncul
     ['POST', '#^order-intents$#', 'order-intents', 0],
     // Halaman terima kasih: hanya lewat token acak 40 karakter. Status per kode order (WEB-XXXX) sengaja

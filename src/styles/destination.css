@@ -46,3 +46,9 @@
 
 /* Landing utama: field yang sedang aktif di atas field berikutnya supaya dropdown tidak tertutup */
 .fg:focus-within { position: relative; z-index: 10; }
+
+/* AreaSearch: tanda sudah terisi otomatis */
+.dp-hint.dp-ok { opacity: 1; font-weight: 700; }
+.dp-light .dp-hint.dp-ok { color: #138a45; }
+.dp-dark .dp-hint.dp-ok { color: #c8f250; }
+.dp-inp input:disabled { opacity: .6; cursor: not-allowed; }

@@ -7,6 +7,7 @@ import { loadMidtransSnap } from '../lib/midtrans.js';
 import { useOrder, useSelectedPackage } from '../state/OrderContext.jsx';
 import { track } from '../lib/pixel.js';
 import ProdImg from './ProdImg.jsx';
+import AreaSearch from './AreaSearch.jsx';
 import { PROVINCES, EMPTY_SHIP, shipErrors, SHIP_ORDER, shipPayload, useShippingFee } from '../lib/shipping.js';
 import { useWaNumber } from '../lib/waNumber.js';
 
@@ -102,6 +103,8 @@ export function OrderForm() {
           <input ref={refs.wa} className="inp" id="fWa" required inputMode="tel" placeholder="08xxxxxxxxxx" autoComplete="tel" value={wa} onChange={(e) => setWa(e.target.value)} style={red('wa')} /></div>
         <div className="fg"><label htmlFor="fEmail"><i className="fa-solid fa-envelope" />Email <small style={{ color: 'var(--muted)', fontWeight: 600 }}>(untuk login Member Area)</small></label>
           <input ref={refs.email} className="inp" id="fEmail" type="email" required inputMode="email" placeholder="nama@email.com" autoComplete="email" value={ship.email} onChange={setS('email')} style={red('email')} /></div>
+        <div className="fg"><label htmlFor="fArea"><i className="fa-solid fa-magnifying-glass-location" />Cari kecamatan / kode pos</label>
+          <AreaSearch id="fArea" theme="dark" inputClassName="inp" onPick={(a) => setShip((s) => ({ ...s, ...a }))} /></div>
         <div className="fg"><label htmlFor="fProv"><i className="fa-solid fa-map" />Provinsi</label>
           <select ref={refs.province} className="inp" id="fProv" required value={ship.province} onChange={setS('province')} style={red('province')} autoComplete="address-level1">
             <option value="">Pilih provinsi</option>

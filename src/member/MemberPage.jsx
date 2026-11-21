@@ -4,6 +4,7 @@ import { api } from '../lib/api.js';
 import { loadMidtransSnap } from '../lib/midtrans.js';
 import { goThanks } from '../lib/thanks.js';
 import { PROVINCES, shipErrors } from '../lib/shipping.js';
+import AreaSearch from '../components/AreaSearch.jsx';
 import './member.css';
 
 /*
@@ -346,6 +347,9 @@ function AddressCard({ address, onSaved, onContinue }) {
           <div className="mb-grid2">
             <label>Nama penerima<input className={c('name')} value={f.name} onChange={set('name')} autoComplete="name" /></label>
             <label>Nomor WhatsApp<input className={c('phone')} value={f.phone} onChange={set('phone')} inputMode="tel" autoComplete="tel" /></label>
+            <label className="full">Cari kecamatan / kode pos
+              <AreaSearch id="mbArea" theme="light" onPick={(a) => setF((x) => ({ ...x, ...a }))} />
+            </label>
             <label>Provinsi
               <select className={c('province')} value={f.province} onChange={set('province')}>
                 <option value="">Pilih provinsi</option>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api.js';
 import { loadMidtransSnap } from '../lib/midtrans.js';
+import AreaSearch from '../components/AreaSearch.jsx';
 import { PROVINCES, EMPTY_SHIP, shipErrors, SHIP_ORDER, shipPayload, useShippingFee } from '../lib/shipping.js';
 import { REVIEWS } from '../data.js';
 import { VIP, rp, waUrl } from './vipConfig.js';
@@ -499,6 +500,10 @@ function Checkout({ onResult }) {
             <label htmlFor="vxEmail">Email</label>
             <input ref={refs.email} id="vxEmail" className={`vx-inp${err('email')}`} type="email" inputMode="email" autoComplete="email" placeholder="nama@email.com" value={ship.email} onChange={setS('email')} />
             {bad.email ? <small className="vx-err">Email belum valid.</small> : <small className="vx-hint">Dipakai untuk login Member Area (password dikirim ke WhatsApp).</small>}
+          </div>
+          <div className="vx-field">
+            <label htmlFor="vxArea">Cari Kecamatan / Kode Pos</label>
+            <AreaSearch id="vxArea" theme="light" inputClassName="vx-inp" onPick={(a) => setShip((s) => ({ ...s, ...a }))} />
           </div>
           <div className="vx-field">
             <label htmlFor="vxProv">Provinsi</label>

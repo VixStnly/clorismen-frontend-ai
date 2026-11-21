@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api.js';
 import { loadMidtransSnap } from '../lib/midtrans.js';
+import AreaSearch from '../components/AreaSearch.jsx';
 import { PROVINCES, EMPTY_SHIP, shipErrors, SHIP_ORDER, shipPayload, useShippingFee } from '../lib/shipping.js';
 import { initPixel, track, trackCustom } from '../lib/pixel.js';
 import { goThanks } from '../lib/thanks.js';
@@ -602,6 +603,10 @@ function Checkout({ open, onClose, pkg, recName }) {
               <label htmlFor="scEmail">Email</label>
               <input ref={refs.email} id="scEmail" className={`sc-inp${err('email')}`} type="email" inputMode="email" autoComplete="email" maxLength={120} placeholder="nama@email.com" value={ship.email} onChange={setS('email')} />
               {bad.email ? <small className="sc-err">Email belum valid.</small> : <small className="sc-hint">Untuk login Member Area (password dikirim ke WhatsApp).</small>}
+            </div>
+            <div className="sc-fld">
+              <label htmlFor="scArea">Cari Kecamatan / Kode Pos</label>
+              <AreaSearch id="scArea" theme="light" inputClassName="sc-inp" onPick={(a) => { ['province', 'city', 'district', 'postal'].forEach(clearBad); setShip((s) => ({ ...s, ...a })); }} />
             </div>
             <div className="sc-frow">
               <div className="sc-fld">
