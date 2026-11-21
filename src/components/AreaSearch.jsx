@@ -27,6 +27,7 @@ export default function AreaSearch({ id = 'fArea', onPick, theme = 'light', inpu
   const [failed, setFailed] = useState(false);
   const [picked, setPicked] = useState(null);
   const boxRef = useRef(null);
+  const inpRef = useRef(null);
   const listId = `${id}-list`;
 
   useEffect(() => {
@@ -63,6 +64,8 @@ export default function AreaSearch({ id = 'fArea', onPick, theme = 'light', inpu
     setOpen(false); setQ(''); setList([]);
   };
 
+  const clear = () => { setPicked(null); setQ(''); setList([]); setTimeout(() => inpRef.current?.focus(), 0); };
+
   const onKey = (e) => {
     if (!open || !list.length) return;
     if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => (a + 1) % list.length); }
@@ -76,8 +79,11 @@ export default function AreaSearch({ id = 'fArea', onPick, theme = 'light', inpu
       <div className="dp-inp">
         <i className="fa-solid fa-magnifying-glass dp-ic" />
         <input
+          ref={inpRef}
           id={id}
-          className={inputClassName}
+          className={`${inputClassName}${picked ? ' dp-chosen' : ''}`}
+          readOnly={!!picked}
+          title={picked ? `${picked.top}, ${picked.bottom}` : undefined}
           role="combobox"
           aria-expanded={open}
           aria-controls={listId}
@@ -85,18 +91,19 @@ export default function AreaSearch({ id = 'fArea', onPick, theme = 'light', inpu
           autoComplete="off"
           disabled={failed}
           placeholder={failed ? 'Pencarian otomatis tidak tersedia, isi manual di bawah' : 'Ketik kecamatan atau kode pos, contoh: Coblong'}
-          value={q}
+          value={picked ? `${picked.top}, ${picked.bottom}` : q}
           onChange={(e) => setQ(e.target.value)}
-          onFocus={() => { if (list.length) setOpen(true); }}
+          onFocus={() => { if (!picked && list.length) setOpen(true); }}
           onKeyDown={onKey}
         />
-        {loading ? <i className="fa-solid fa-spinner fa-spin dp-spin" /> : null}
+        {loading && !picked ? <i className="fa-solid fa-spinner fa-spin dp-spin" /> : null}
+        {picked ? <button type="button" className="dp-x" onClick={clear} aria-label="Ganti kecamatan" title="Ganti kecamatan">×</button> : null}
       </div>
-      {picked && !q ? <small className="dp-hint dp-ok"><i className="fa-solid fa-circle-check" /> Terisi otomatis: {picked.top}, {picked.bottom}</small>
+      {picked ? <small className="dp-hint dp-ok"><i className="fa-solid fa-circle-check" /> Provinsi, kota, kecamatan & kode pos sudah terisi. Klik × untuk ganti.</small>
         : failed ? null
           : q.trim().length > 0 && q.trim().length < 3 ? <small className="dp-hint">Ketik minimal 3 huruf.</small>
             : <small className="dp-hint">Pilih dari daftar, provinsi, kota, kecamatan & kode pos langsung terisi.</small>}
-      {open && !failed && q.trim().length >= 3 && !loading ? (
+      {open && !picked && !failed && q.trim().length >= 3 && !loading ? (
         <ul className="dp-list" id={listId} role="listbox">
           {list.length ? list.map((d, i) => {
             const p = parts(d);

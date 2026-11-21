@@ -52,3 +52,9 @@
 .dp-light .dp-hint.dp-ok { color: #138a45; }
 .dp-dark .dp-hint.dp-ok { color: #c8f250; }
 .dp-inp input:disabled { opacity: .6; cursor: not-allowed; }
+.dp-x { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; font-size: 20px; line-height: 1; font-weight: 700; }
+.dp-light .dp-x { background: #eef2f7; color: #3d4756; }
+.dp-light .dp-x:hover { background: #fde8e8; color: #b23a3a; }
+.dp-dark .dp-x { background: rgba(255, 255, 255, .1); color: #eaf2ff; }
+.dp-dark .dp-x:hover { background: rgba(255, 90, 90, .25); }
+.dp-inp input.dp-chosen { font-weight: 700; text-overflow: ellipsis; cursor: default; }
