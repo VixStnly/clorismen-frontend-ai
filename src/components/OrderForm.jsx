@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { CONFIG, rp, waLink } from '../config.js';
+import { rp, waLink } from '../config.js';
+import { useLandingPackages } from '../lib/catalog.js';
 import { api } from '../lib/api.js';
 import { goThanks } from '../lib/thanks.js';
 import { loadMidtransSnap } from '../lib/midtrans.js';
-import { useOrder } from '../state/OrderContext.jsx';
+import { useOrder, useSelectedPackage } from '../state/OrderContext.jsx';
 import { track } from '../lib/pixel.js';
 import ProdImg from './ProdImg.jsx';
 import { PROVINCES, EMPTY_SHIP, shipErrors, SHIP_ORDER, shipPayload, useShippingFee } from '../lib/shipping.js';
@@ -34,7 +35,10 @@ function ErrorDialog({ result, onClose }) {
 }
 
 export function OrderForm() {
-  const { qtyIdx, setPkg, bump, setBump } = useOrder();
+  const { setPkg, bump, setBump } = useOrder();
+  const pkgs = useLandingPackages();
+  const { idx: qtyIdx, p: selected } = useSelectedPackage(pkgs);
+  const soldOut = !selected || !selected.inStock;
   const [name, setName] = useState('');
   const [wa, setWa] = useState('');
   const [ship, setShip] = useState(EMPTY_SHIP);
@@ -42,7 +46,7 @@ export function OrderForm() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   const refs = { name: useRef(null), wa: useRef(null), email: useRef(null), province: useRef(null), city: useRef(null), district: useRef(null), postal: useRef(null), addr: useRef(null) };
-  const shippingFee = useShippingFee([CONFIG.packages[qtyIdx].slug]);
+  const shippingFee = useShippingFee(selected ? [selected.slug] : []);
 
   const red = (k) => (bad[k] ? { borderColor: 'var(--red)' } : undefined);
   const setS = (k) => (e) => setShip((s) => ({ ...s, [k]: k === 'postal' ? e.target.value.replace(/\D/g, '').slice(0, 5) : e.target.value }));
@@ -58,7 +62,8 @@ export function OrderForm() {
     const first = ['name', 'wa', ...SHIP_ORDER].find((k) => nextBad[k]);
     if (first) { refs[first].current?.focus(); return; }
 
-    const p = CONFIG.packages[qtyIdx];
+    const p = selected;
+    if (!p || !p.inStock) { setResult({ status: 'error', message: 'Maaf, stok paket ini sedang habis. Pilih paket lain atau chat admin.' }); return; }
     setBusy(true);
 
     const note = [bump ? '+1 Micellar Water ekstra' : '', 'Landing utama'].filter(Boolean).join(' | ');
@@ -112,10 +117,10 @@ export function OrderForm() {
           <textarea ref={refs.addr} className="inp" id="fAddr" required maxLength={250} placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, patokan" autoComplete="street-address" value={ship.addr} onChange={setS('addr')} style={red('addr')} /></div>
         <div className="fg"><label><i className="fa-solid fa-box" />Pilih jumlah</label>
           <div className="opts c3" id="qtyOpts">
-            {CONFIG.packages.map((p, i) => (
+            {pkgs.map((p, i) => (
               <label className="opt" key={p.slug}>
-                <input type="radio" name="qty" value={i} checked={qtyIdx === i} onChange={() => setPkg(i)} />
-                <span>{p.qty} Paket{p.hot ? ' ⭐' : ''}<small>{rp(p.price)}{p.hot ? ' · Paling Hemat' : ''}</small></span>
+                <input type="radio" name="qty" value={i} checked={qtyIdx === i} disabled={!p.inStock} onChange={() => setPkg(i)} />
+                <span>{p.title}{p.hot && p.inStock ? ' ⭐' : ''}<small>{p.inStock ? <>{rp(p.price)}{p.hot ? ' · Paling Hemat' : ''}</> : 'Stok habis'}</small></span>
               </label>
             ))}
           </div>
@@ -125,7 +130,8 @@ export function OrderForm() {
         </div>
         <label className="bump"><input type="checkbox" id="fBump" checked={bump} onChange={(e) => setBump(e.target.checked)} /><ProdImg k="micellar" alt="" /><span><b>+ Tambah 1 Micellar Water ekstra buat di tas/motor</b><small id="bumpTxt">Harga spesial, dikonfirmasi admin</small></span></label>
         <div className="incl"><span><i className="fa-solid fa-check" /> Ebook 30 Hari</span><span><i className="fa-solid fa-check" /> Konsultasi WA</span><span><i className="fa-solid fa-check" /> {shippingFee > 0 ? `Ongkir ${rp(shippingFee)}` : 'Gratis Ongkir'}</span></div>
-        <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={busy}>{busy ? 'Memproses…' : 'Ya, Gue Mau Muka Bersih Maksimal – Pesan Sekarang'}</button>
+        <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={busy || soldOut}>{busy ? 'Memproses…' : soldOut ? 'Stok Sedang Habis' : 'Ya, Gue Mau Muka Bersih Maksimal – Pesan Sekarang'}</button>
+        {soldOut ? <a href={waLink('Halo admin Clorismen, paket Clean Skin Series di website lagi habis. Kapan restock?')} target="_blank" rel="noopener" className="btn btn-ghost btn-block" style={{ marginTop: '10px' }}><i className="fa-brands fa-whatsapp" /> Tanya Restock ke Admin</a> : null}
         <div className="secure"><span><i className="fa-solid fa-lock" />Data aman</span><span><i className="fa-solid fa-truck-fast" />{shippingFee > 0 ? 'Resi via WhatsApp' : 'Gratis ongkir'}</span><span><i className="fa-brands fa-whatsapp" />Admin siap bantu</span></div>
       </form>
       <ErrorDialog result={result} onClose={() => setResult(null)} />
@@ -134,15 +140,17 @@ export function OrderForm() {
 }
 
 export function OrderSummary() {
-  const { qtyIdx, bump } = useOrder();
-  const p = CONFIG.packages[qtyIdx];
-  const shippingFee = useShippingFee([p.slug]);
+  const { bump } = useOrder();
+  const pkgs = useLandingPackages();
+  const { p } = useSelectedPackage(pkgs);
+  const shippingFee = useShippingFee(p ? [p.slug] : []);
+  if (!p) return null;
   return (
     <aside className="summary glass" data-reveal="right">
       <div className="eyebrow">Ringkasan Order</div>
       <div className="sum-img"><ProdImg k="facewash" alt="" /><ProdImg k="micellar" alt="" style={{ height: '170px', position: 'relative', zIndex: 2 }} /><ProdImg k="serum" alt="" style={{ height: '120px' }} /><ProdImg k="sunscreen" alt="" style={{ height: '135px' }} /></div>
-      <div className="row"><span>Clean Skin Series</span><b id="sQty">{p.qty} Paket</b></div>
-      <div className="row"><span>Harga normal</span><s id="sNormal" style={{ color: 'var(--dim)' }}>{rp(CONFIG.normal * p.qty)}</s></div>
+      <div className="row"><span>Paket</span><b id="sQty">{p.title}</b></div>
+      {p.compare && p.compare > p.price ? <div className="row"><span>Harga normal</span><s id="sNormal" style={{ color: 'var(--dim)' }}>{rp(p.compare)}</s></div> : null}
       {bump ? <div className="row" id="sBumpRow"><span>+ Micellar Water ekstra</span><b>dikonfirmasi admin</b></div> : null}
       <div className="row"><span>Ebook 30 Hari</span><span className="free">GRATIS</span></div>
       <div className="row"><span>Ongkir</span>{shippingFee > 0 ? <b>{rp(shippingFee)}</b> : <span className="free">GRATIS</span>}</div>

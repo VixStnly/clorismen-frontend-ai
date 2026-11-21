@@ -7,14 +7,15 @@ export const CONFIG = {
   // Nomor WA admin TIDAK diatur di sini: diambil dari ERP (Landing Page CMS → Brand), lihat src/lib/waNumber.js
   promoEnd: '2026-11-30T23:59:59+07:00',     // GANTI: tanggal akhir promo (jujur)
   endText: '30 November 2026',
-  price: 199000, normal: 332000,
+  price: 199000, normal: 332000,            // cadangan; harga tampil diambil dari paket pertama di ERP
   serumPrice: null, sunPrice: null,          // GANTI: harga satuan serum & sunscreen, contoh 89000
   quotaLeft: null, quotaTotal: null,         // isi angka asli kalau mau tampilkan kuota, mis. 37 & 100
-  // `slug` = slug produk paket di ERP (Master Produk). Harga di ERP HARUS sama dengan `price` di bawah.
+  // CADANGAN SAJA. Pilihan paket (judul, harga, harga coret, deskripsi, foto, stok, urutan) diatur dari
+  // ERP → Master Produk → Edit → "Tampilan di Landing". Daftar di bawah hanya dipakai kalau ERP tidak bisa dihubungi.
   packages: [
-    { qty: 1, slug: 'clean-skin-series-1-paket', price: 199000, tier: '1 PAKET', save: '', desc: 'Untuk ±1 bulan pemakaian' },
-    { qty: 2, slug: 'clean-skin-series-2-paket', price: 379000, tier: '2 PAKET', save: 'Hemat Rp19.000', desc: 'Untuk ±2 bulan, pas buat lihat hasil maksimal', hot: true },
-    { qty: 3, slug: 'clean-skin-series-3-paket', price: 549000, tier: '3 PAKET', save: 'Hemat Rp48.000', desc: 'Bonus tambahan + bisa patungan bareng temen' },
+    { qty: 1, slug: 'clean-skin-series-1-paket', title: '1 Paket', price: 199000, compare: 332000, desc: 'Untuk ±1 bulan pemakaian' },
+    { qty: 2, slug: 'clean-skin-series-2-paket', title: '2 Paket', price: 379000, compare: 664000, desc: 'Untuk ±2 bulan, pas buat lihat hasil maksimal', hot: true },
+    { qty: 3, slug: 'clean-skin-series-3-paket', title: '3 Paket', price: 549000, compare: 996000, desc: 'Bonus tambahan + bisa patungan bareng temen' },
   ],
 };
 

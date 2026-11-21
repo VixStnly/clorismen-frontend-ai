@@ -1,7 +1,9 @@
-import { CONFIG, rp } from '../config.js';
+import { rp } from '../config.js';
+import { useMainPrice } from '../lib/catalog.js';
 import { TopTimer } from '../components/Countdown.jsx';
 
 export default function Topbar() {
+  const main = useMainPrice();
   return (
     <>
       <div className="noise"></div>
@@ -10,8 +12,8 @@ export default function Topbar() {
       <div className="topbar">
         <div className="inner">
           <span className="pill">PROMO KHUSUS WEBSITE</span>
-          <span className="tb-long">🔥 Clean Skin Series cuma <b>{rp(CONFIG.price)}</b> <s>Rp332.000</s> + Gratis Ongkir + Bonus Ebook</span>
-          <span className="tb-short">🔥 Promo web <b>{rp(CONFIG.price)}</b> + Ongkir & Ebook gratis</span>
+          <span className="tb-long">🔥 Clean Skin Series cuma <b>{rp(main.price)}</b>{main.compare ? <> <s>{rp(main.compare)}</s></> : null} + Gratis Ongkir + Bonus Ebook</span>
+          <span className="tb-short">🔥 Promo web <b>{rp(main.price)}</b> + Ongkir & Ebook gratis</span>
           <TopTimer />
         </div>
       </div>

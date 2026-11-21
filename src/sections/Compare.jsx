@@ -1,7 +1,9 @@
 import { CONFIG, rp } from '../config.js';
+import { useMainPrice } from '../lib/catalog.js';
 import ProdImg from '../components/ProdImg.jsx';
 
 export default function Compare() {
+  const main = useMainPrice();
   return (
     <>
       <section className="sp" id="banding">
@@ -20,7 +22,7 @@ export default function Compare() {
                 <tr><td><span className="pimg-s"><ProdImg k="sunscreen" alt="" />Sunscreen</span></td><td>{CONFIG.sunPrice ? rp(CONFIG.sunPrice) : 'Rp[xx.000]'}</td><td className="hi"><span className="yes"><i className="fa-solid fa-check"></i> Termasuk</span></td></tr>
                 <tr><td><i className="fa-solid fa-book-open" style={{color: "var(--lime)", marginRight: "10px"}}></i>Ebook 30 Hari</td><td><span className="no"><i className="fa-solid fa-xmark"></i></span></td><td className="hi"><span className="yes"><i className="fa-solid fa-gift"></i> GRATIS</span></td></tr>
                 <tr><td><i className="fa-solid fa-truck-fast" style={{color: "var(--cyan)", marginRight: "10px"}}></i>Ongkir</td><td>Bayar</td><td className="hi"><span className="yes"><i className="fa-solid fa-check"></i> GRATIS</span></td></tr>
-                <tr><td>Total</td><td>Rp332.000+</td><td className="hi">{rp(CONFIG.price)}</td></tr>
+                <tr><td>Total</td><td>Rp332.000+</td><td className="hi">{rp(main.price)}</td></tr>
               </tbody>
             </table>
           </div>

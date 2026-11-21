@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCatalog } from './catalog.js';
 
 /*
  * Data pengiriman checkout (tanpa RajaOngkir/Komship): pembeli mengetik alamat lengkap sendiri,
@@ -48,23 +48,7 @@ export const shipText = (s) => [s.addr.trim(), s.district.trim() && `Kec. ${s.di
  * Ongkir per produk diatur di ERP (Master Produk: gratis ongkir / ongkir flat).
  * Satu pesanan = ongkir flat tertinggi dari produk yang tidak gratis ongkir (sama dengan perhitungan ERP).
  */
-let feeCache = null;
 export function useShippingFee(slugs) {
-  const [fees, setFees] = useState(feeCache);
-  useEffect(() => {
-    if (feeCache) return undefined;
-    let alive = true;
-    fetch('/bff/products', { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
-      .then((r) => r.json())
-      .then((j) => {
-        const map = {};
-        (j?.data || []).forEach((p) => { map[p.slug] = Number(p.shipping_fee || 0); });
-        feeCache = map;
-        if (alive) setFees(map);
-      })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, []);
-  if (!fees) return 0;
-  return slugs.reduce((max, s) => Math.max(max, fees[s] || 0), 0);
+  const { bySlug } = useCatalog();
+  return slugs.reduce((max, s) => Math.max(max, Number(bySlug[s]?.shipping_fee || 0)), 0);
 }

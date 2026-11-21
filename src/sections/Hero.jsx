@@ -1,8 +1,10 @@
-import { CONFIG, rp } from '../config.js';
+import { rp } from '../config.js';
+import { useMainPrice } from '../lib/catalog.js';
 import ProdImg from '../components/ProdImg.jsx';
 import Bubbles from '../components/Bubbles.jsx';
 
 export default function Hero() {
+  const main = useMainPrice();
   return (
     <>
       <header className="hero" id="top">
@@ -16,7 +18,7 @@ export default function Hero() {
               <span className="gloss-text">30 Hari dari Sekarang, Lo Bisa Ngaca dan Bilang:</span>
               <span className="quote grad-text"><em>“Gila, Muka Gue Beda.”</em></span>
             </h1>
-            <p className="sub" data-reveal="" style={{'--d': ".16s"}}><b>Clorismen Clean Skin Series</b>: 4 langkah perawatan wajah pria (Micellar Water, Face Wash, Brightening Serum &amp; Sunscreen) yang bantu angkat debu, polusi &amp; minyak yang nggak keangkat sabun biasa. Muka lebih bersih, nggak kusam, dan seger seharian. <span className="hl">Hemat Rp133.000 + GRATIS Ebook “Strategi Tampil Lebih Baik Sebagai Seorang Pria Dalam Waktu 30 Hari”</span>, khusus order di website.</p>
+            <p className="sub" data-reveal="" style={{'--d': ".16s"}}><b>Clorismen Clean Skin Series</b>: 4 langkah perawatan wajah pria (Micellar Water, Face Wash, Brightening Serum &amp; Sunscreen) yang bantu angkat debu, polusi &amp; minyak yang nggak keangkat sabun biasa. Muka lebih bersih, nggak kusam, dan seger seharian. <span className="hl">{main.save > 0 ? `Hemat ${rp(main.save)} + ` : ''}GRATIS Ebook “Strategi Tampil Lebih Baik Sebagai Seorang Pria Dalam Waktu 30 Hari”</span>, khusus order di website.</p>
             <div className="trust" data-reveal="" style={{'--d': ".24s"}}>
               <span className="star"><i className="fa-solid fa-star"></i> 4.8/5</span>
               <span><i className="fa-solid fa-box"></i> 10.000+ paket terjual</span>
@@ -25,7 +27,7 @@ export default function Hero() {
             </div>
             <div className="hero-cta" data-reveal="" style={{'--d': ".32s"}}>
               <a href="#order" className="btn btn-primary btn-lg">Ambil Promonya Sekarang <i className="fa-solid fa-arrow-down"></i></a>
-              <div className="price-chip"><s>Rp332.000</s><b>{rp(CONFIG.price)}</b><small>Hemat Rp133.000</small></div>
+              <div className="price-chip">{main.compare ? <s>{rp(main.compare)}</s> : null}<b>{rp(main.price)}</b>{main.save > 0 ? <small>Hemat {rp(main.save)}</small> : null}</div>
             </div>
           </div>
 

@@ -1,7 +1,9 @@
-import { CONFIG } from '../config.js';
+import { rp } from '../config.js';
+import { useMainPrice } from '../lib/catalog.js';
 import ProdImg from '../components/ProdImg.jsx';
 
 export default function Offer() {
+  const main = useMainPrice();
   return (
     <>
       <section className="sp" id="penawaran">
@@ -25,10 +27,10 @@ export default function Offer() {
             </div>
             <div className="right">
               <div className="price-big">
-                <div className="was">Harga Normal: <s>Rp332.000</s></div>
+                {main.compare ? <div className="was">Harga Normal: <s>{rp(main.compare)}</s></div> : null}
                 <div className="eyebrow" style={{justifyContent: "center", marginTop: "18px"}}>Harga Website</div>
-                <div className="now gloss-text"><sup>Rp</sup><span>{CONFIG.price.toLocaleString('id-ID')}</span></div>
-                <div className="save">Hemat Rp133.000 + bonus ebook senilai Rp149.000!</div>
+                <div className="now gloss-text"><sup>Rp</sup><span>{main.price.toLocaleString('id-ID')}</span></div>
+                <div className="save">{main.save > 0 ? `Hemat ${rp(main.save)} + ` : ''}bonus ebook senilai Rp149.000!</div>
               </div>
               <a href="#paket" className="btn btn-primary btn-lg btn-block" style={{marginTop: "28px"}}>Pilih Paket Gue <i className="fa-solid fa-arrow-down"></i></a>
               <div className="mini-trust"><span><i className="fa-solid fa-truck-fast"></i>Gratis ongkir</span><span><i className="fa-solid fa-shield-halved"></i>100% original</span></div>

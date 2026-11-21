@@ -7,6 +7,7 @@ import { VIP, rp, waUrl } from './vipConfig.js';
 import { initPixel, track } from './pixel.js';
 import { goThanks } from '../lib/thanks.js';
 import { useWaNumber } from '../lib/waNumber.js';
+import { useCatalog } from '../lib/catalog.js';
 import PurchaseToast from '../components/PurchaseToast.jsx';
 import './vip.css';
 
@@ -24,7 +25,23 @@ const IMG = {
   logoGold: '/images/opt/vip-logo-gold.webp',
 };
 
-const VIP_PKG = VIP.packages.find((p) => p.hot) || VIP.packages[VIP.packages.length - 1];
+/*
+ * Harga & stok paket VIP dan order bump diambil dari ERP (Master Produk) berdasarkan slug.
+ * Teks khusus halaman ini (nama paket, perks, harga pembanding marketplace) tetap di vipConfig.js.
+ */
+function useVipData() {
+  const { bySlug } = useCatalog();
+  const packages = VIP.packages.map((p) => {
+    const e = bySlug[p.slug];
+    return e ? { ...p, price: Number(e.price) || p.price, inStock: e.in_stock !== false } : { ...p, inStock: true };
+  });
+  const be = VIP.bump.slug ? bySlug[VIP.bump.slug] : null;
+  const bump = be
+    ? { ...VIP.bump, price: Number(be.price) || VIP.bump.price, normal: be.compare_price && be.compare_price > be.price ? Number(be.compare_price) : VIP.bump.normal, inStock: be.in_stock !== false }
+    : { ...VIP.bump, inStock: true };
+  const main = packages.find((p) => p.hot) || packages[packages.length - 1];
+  return { packages, bump, main };
+}
 const scrollToOrder = () => document.getElementById('pesan')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
 /* ================= Efek halaman ================= */
@@ -129,6 +146,7 @@ function Announcement() {
 
 /* ================= SECTION 2: Hero ================= */
 function Hero() {
+  const VIP_PKG = useVipData().main;
   return (
     <header className="vx-hero">
       <div className="vx-hero-bg" aria-hidden="true"><span className="o1" /><span className="o2" /><span className="o3" /></div>
@@ -285,6 +303,7 @@ function BuyerReviews() {
 }
 
 function ValueStack() {
+  const VIP_PKG = useVipData().main;
   const items = [
     { t: 'Paket Lengkap Clorismen', s: 'Perawatan 30 Hari — Lebih murah dari Official Store Marketplace', tag: 'HEMAT' },
     { t: `BONUS 1: E-Book ‘${VIP.ebookTitle}’`, s: `Senilai ${rp(VIP.ebookValue)}`, tag: 'GRATIS' },
@@ -361,8 +380,15 @@ function ValueStack() {
 /* ================= SECTION 6: Pilihan paket & form pemesanan ================= */
 // Pembayaran lewat payment gateway yang aktif di ERP (Midtrans popup / iPaymu redirect). COD sudah dihapus.
 function Checkout({ onResult }) {
+  const { packages, bump: BUMP } = useVipData();
   const defaultIdx = Math.max(0, VIP.packages.findIndex((p) => p.hot));
-  const [pkgIdx, setPkgIdx] = useState(defaultIdx);
+  const [pickedIdx, setPkgIdx] = useState(defaultIdx);
+  // Paket yang stoknya habis tidak bisa dipilih: pindah otomatis ke paket lain yang masih ada
+  let pkgIdx = pickedIdx;
+  if (!packages[pkgIdx]?.inStock) {
+    const alt = packages.findIndex((p) => p.inStock);
+    if (alt >= 0) pkgIdx = alt;
+  }
   const [bump, setBump] = useState(false);
   const [name, setName] = useState('');
   const [wa, setWa] = useState('');
@@ -372,10 +398,12 @@ function Checkout({ onResult }) {
   const refs = { name: useRef(null), wa: useRef(null), email: useRef(null), province: useRef(null), city: useRef(null), district: useRef(null), postal: useRef(null), addr: useRef(null) };
   const setS = (k) => (e) => setShip((s) => ({ ...s, [k]: k === 'postal' ? e.target.value.replace(/\D/g, '').slice(0, 5) : e.target.value }));
 
-  const pkg = VIP.packages[pkgIdx];
-  const shippingFee = useShippingFee([pkg.slug, ...(bump && VIP.bump.slug ? [VIP.bump.slug] : [])]);
-  const total = pkg.price + (bump ? VIP.bump.price : 0) + shippingFee;
-  const normalTotal = pkg.marketplace + (bump ? VIP.bump.normal : 0) + shippingFee;
+  const pkg = packages[pkgIdx];
+  const soldOut = !pkg.inStock;
+  const withBump = bump && BUMP.inStock;
+  const shippingFee = useShippingFee([pkg.slug, ...(withBump && BUMP.slug ? [BUMP.slug] : [])]);
+  const total = pkg.price + (withBump ? BUMP.price : 0) + shippingFee;
+  const normalTotal = pkg.marketplace + (withBump ? BUMP.normal : 0) + shippingFee;
 
   // Meta: InitiateCheckout saat user mulai mengisi form
   const startCheckout = () => track('InitiateCheckout', { value: total, currency: 'IDR', content_name: pkg.name });
@@ -391,15 +419,16 @@ function Checkout({ onResult }) {
     setBad(nextBad);
     const first = ['name', 'wa', ...SHIP_ORDER].find((k) => nextBad[k]);
     if (first) { refs[first].current?.focus(); return; }
+    if (soldOut) { onResult({ status: 'error', message: 'Maaf, stok paket ini sedang habis. Chat admin untuk info restock.' }); return; }
 
     setBusy(true);
     startCheckout();
 
-    const bumpNote = bump && !VIP.bump.slug ? `+ ${VIP.bump.name} (${rp(VIP.bump.price)})` : '';
+    const bumpNote = withBump && !BUMP.slug ? `+ ${BUMP.name} (${rp(BUMP.price)})` : '';
     const note = ['VIP Page', pkg.name, bumpNote].filter(Boolean).join(' | ');
 
     const items = [{ slug: pkg.slug, qty: 1 }];
-    if (bump && VIP.bump.slug) items.push({ slug: VIP.bump.slug, qty: 1 });
+    if (withBump && BUMP.slug) items.push({ slug: BUMP.slug, qty: 1 });
 
     try {
       const data = await api.createOrderIntent({
@@ -426,7 +455,7 @@ function Checkout({ onResult }) {
   };
 
   const err = (k) => (bad[k] ? ' is-bad' : '');
-  const bumpPct = Math.round((1 - VIP.bump.price / VIP.bump.normal) * 100);
+  const bumpPct = BUMP.normal > BUMP.price ? Math.round((1 - BUMP.price / BUMP.normal) * 100) : 0;
 
   return (
     <section className="vx-sec vx-checkout" id="pesan">
@@ -436,10 +465,10 @@ function Checkout({ onResult }) {
         <div className="vx-form-main">
           <div className="vx-step"><span>1</span> Pilih paket</div>
           <div className="vx-pkgs" role="radiogroup" aria-label="Pilihan paket">
-            {VIP.packages.map((p, i) => (
-              <label key={p.id} className={`vx-pkg${pkgIdx === i ? ' is-on' : ''}${p.hot ? ' is-hot' : ''}`}>
-                <input type="radio" name="pkg" checked={pkgIdx === i} onChange={() => setPkgIdx(i)} />
-                {p.hot ? <span className="vx-ribbon"><i className="fa-solid fa-fire" /> PALING LARIS</span> : null}
+            {packages.map((p, i) => (
+              <label key={p.id} className={`vx-pkg${pkgIdx === i ? ' is-on' : ''}${p.hot && p.inStock ? ' is-hot' : ''}${p.inStock ? '' : ' is-out'}`}>
+                <input type="radio" name="pkg" checked={pkgIdx === i} disabled={!p.inStock} onChange={() => setPkgIdx(i)} />
+                {!p.inStock ? <span className="vx-ribbon vx-ribbon-out">STOK HABIS</span> : p.hot ? <span className="vx-ribbon"><i className="fa-solid fa-fire" /> PALING LARIS</span> : null}
                 <span className="vx-radio" />
                 <div className="vx-pkg-main">
                   <b>{p.name}</b>
@@ -513,20 +542,22 @@ function Checkout({ onResult }) {
             <i className="fa-solid fa-circle-check vx-pay-ok" />
           </div>
 
+          {BUMP.inStock ? (
           <label className={`vx-bump${bump ? ' is-on' : ''}`}>
             <input type="checkbox" checked={bump} onChange={(e) => setBump(e.target.checked)} />
             <span className="vx-check"><i className="fa-solid fa-check" /></span>
-            <img src={VIP.bump.img} alt="" width="36" height="110" loading="lazy" />
+            <img src={BUMP.img} alt="" width="36" height="110" loading="lazy" />
             <span className="vx-bump-txt">
-              <b>Ya! Tambahkan {VIP.bump.name}</b>
-              <span>hanya tambah <b className="vx-goldtxt">{rp(VIP.bump.price)}</b> <s>{rp(VIP.bump.normal)}</s> <em>Hemat {bumpPct}%</em></span>
+              <b>Ya! Tambahkan {BUMP.name}</b>
+              <span>hanya tambah <b className="vx-goldtxt">{rp(BUMP.price)}</b>{BUMP.normal > BUMP.price ? <> <s>{rp(BUMP.normal)}</s> <em>Hemat {bumpPct}%</em></> : null}</span>
             </span>
           </label>
+          ) : null}
 
           <div className="vx-summary">
             <div className="vx-sum-title"><i className="fa-solid fa-receipt" /> Ringkasan pesanan</div>
             <div className="vx-sum-row"><span>{pkg.name}</span><span>{rp(pkg.price)}</span></div>
-            {bump ? <div className="vx-sum-row vx-pop"><span>{VIP.bump.name}</span><span>{rp(VIP.bump.price)}</span></div> : null}
+            {withBump ? <div className="vx-sum-row vx-pop"><span>{BUMP.name}</span><span>{rp(BUMP.price)}</span></div> : null}
             <div className="vx-sum-row"><span>Bonus E-Book</span><span className="vx-free">GRATIS</span></div>
             {pkg.hot ? <div className="vx-sum-row"><span>Konsultasi Ahli Kesehatan Kulit</span><span className="vx-free">GRATIS</span></div> : null}
             <div className="vx-sum-row"><span>Ongkos kirim</span>{shippingFee > 0 ? <span>{rp(shippingFee)}</span> : <span className="vx-free">GRATIS</span>}</div>
@@ -540,9 +571,14 @@ function Checkout({ onResult }) {
             <div className="vx-scarcity"><span className="vx-live" /><span>⚠️ Kuota Konsultasi Ahli Kesehatan Kulit &amp; Bonus E-Book hari ini tersisa <b>{VIP.slotsLeft} slot</b>.</span></div>
           ) : null}
 
-          <button type="submit" className="vx-btn vx-btn-gold vx-btn-xl vx-btn-block" disabled={busy}>
-            {busy ? <><i className="fa-solid fa-spinner fa-spin" /> Memproses…</> : <>PESAN SEKARANG &amp; AMANKAN BONUSNYA 🔒</>}
+          <button type="submit" className="vx-btn vx-btn-gold vx-btn-xl vx-btn-block" disabled={busy || soldOut}>
+            {busy ? <><i className="fa-solid fa-spinner fa-spin" /> Memproses…</> : soldOut ? <>STOK SEDANG HABIS</> : <>PESAN SEKARANG &amp; AMANKAN BONUSNYA 🔒</>}
           </button>
+          {soldOut ? (
+            <a className="vx-btn vx-btn-block" style={{ marginTop: '10px' }} href={waUrl('Halo admin Clorismen, paket VIP di website lagi habis. Kapan restock?')} target="_blank" rel="noopener">
+              <i className="fa-brands fa-whatsapp" /> Tanya Restock ke Admin
+            </a>
+          ) : null}
           <div className="vx-secure">
             <span><i className="fa-solid fa-lock" /> Data aman</span>
             <span><i className="fa-solid fa-truck-fast" /> {shippingFee > 0 ? 'Resi via WhatsApp' : 'Gratis ongkir'}</span>
@@ -719,6 +755,7 @@ function PolicyModal({ id, onClose }) {
 
 /* ================= Sticky bottom CTA ================= */
 function StickyCta() {
+  const VIP_PKG = useVipData().main;
   const [state, setState] = useState({ past: false, atForm: false });
   useEffect(() => {
     const onScroll = () => setState((s) => (s.past === window.scrollY > 420 ? s : { ...s, past: window.scrollY > 420 }));

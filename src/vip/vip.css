@@ -706,3 +706,6 @@ body { margin: 0; background: #f3efe6; }
   [data-rv] { opacity: 1; transform: none; filter: none; }
   .vx-h2 .vx-gold::after, .vx-h1 .vx-gold::after { transform: scaleX(1); }
 }
+/* Paket stok habis (status stok dari ERP / Master Produk) */
+.vx-pkg.is-out { opacity: .55; filter: grayscale(.6); cursor: not-allowed; }
+.vx-ribbon.vx-ribbon-out { background: linear-gradient(180deg, #8a93a3, #5b6474); box-shadow: none; animation: none; }
