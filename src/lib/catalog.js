@@ -4,10 +4,11 @@ import { CONFIG, rp } from '../config.js';
 /*
  * Katalog produk dari ERP (Master Produk) lewat /bff/products. Diambil SEKALI per halaman dan dipakai
  * bersama oleh kartu paket, form order, ongkir, dan halaman VIP.
- * Nama/judul, harga, harga coret, deskripsi singkat, foto, urutan, label unggulan, dan status stok
- * semuanya diatur dari dashboard. CONFIG.packages di config.js hanya cadangan kalau ERP tidak bisa dihubungi.
+ * Nama/judul, harga, harga coret, deskripsi singkat, foto, label unggulan, dan status stok diatur di Master Produk.
+ * Produk MANA yang tampil di Landing Utama / VIP / Konsultan diatur di ERP → Landing Page CMS → Produk per Halaman
+ * (dikirim sebagai `pages`). CONFIG.packages di config.js hanya cadangan kalau ERP tidak bisa dihubungi.
  */
-let state = { loaded: false, failed: false, list: [], bySlug: {} };
+let state = { loaded: false, failed: false, list: [], bySlug: {}, pages: {} };
 const subs = new Set();
 let started = false;
 
@@ -25,7 +26,9 @@ function load() {
       const list = Array.isArray(j?.data) ? j.data : [];
       const bySlug = {};
       list.forEach((p) => { bySlug[p.slug] = p; });
-      emit({ loaded: true, failed: false, list, bySlug });
+      // Produk per halaman dari ERP (Landing Page CMS → Produk per Halaman). null = belum diatur → bawaan di kode.
+      const pages = j?.pages && typeof j.pages === 'object' ? j.pages : {};
+      emit({ loaded: true, failed: false, list, bySlug, pages });
     })
     .catch(() => emit({ ...state, loaded: true, failed: true }));
 }
@@ -39,7 +42,7 @@ export function useCatalog() {
 }
 
 /** Foto bawaan seeder (default-*) tidak dipakai di kartu: kartu tetap memakai susunan foto produk landing. */
-const uploadedImage = (url) => (url && !/\/default-[^/]*$/.test(url) ? url : null);
+export const uploadedImage = (url) => (url && !/\/default-[^/]*$/.test(url) ? url : null);
 
 const saveText = (price, compare) => (compare && compare > price ? `Hemat ${rp(compare - price)}` : '');
 
@@ -68,9 +71,25 @@ function fromConfig(c, i, bySlug) {
   return { slug: c.slug, title: c.title, price: c.price, compare: c.compare || null, save: saveText(c.price, c.compare), desc: c.desc, hot: !!c.hot, image: null, inStock: true, qty: c.qty };
 }
 
-/** Pilihan paket landing utama: produk yang dicentang "Tampilkan di landing utama" di Master Produk. */
+/**
+ * Slug pilihan ERP untuk satu slot halaman, hanya yang produknya ada di katalog.
+ * Mengembalikan null kalau halaman/slot belum diatur di ERP (pakai bawaan di kode).
+ */
+export function pageSlugs(cat, page, slot) {
+  const v = cat.pages?.[page]?.[slot];
+  if (v == null) return null;
+  return (Array.isArray(v) ? v : [v]).filter((s) => s && cat.bySlug[s]);
+}
+
+/** Halaman sudah diatur di ERP (ada di `pages` dan tidak null). */
+export const pageConfigured = (cat, page) => !!cat.pages?.[page];
+
+/** Pilihan paket landing utama: kartu "Landing Utama" di Landing Page CMS (urutan ikut ERP). */
 export function useLandingPackages() {
   const cat = useCatalog();
+  const chosen = pageSlugs(cat, 'main', 'package');
+  if (chosen && chosen.length) return chosen.map((slug, i) => fromErp(cat.bySlug[slug], i));
+  // ERP lama (belum ada `pages`): ikuti penanda on_landing dari Master Produk
   const onLanding = cat.list
     .filter((p) => p.on_landing)
     .sort((a, b) => (a.landing_order ?? 0) - (b.landing_order ?? 0));

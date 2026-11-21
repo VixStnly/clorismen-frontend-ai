@@ -8,7 +8,7 @@ import { VIP, rp, waUrl } from './vipConfig.js';
 import { initPixel, track } from './pixel.js';
 import { goThanks } from '../lib/thanks.js';
 import { useWaNumber, useBrand, fmtWa, brandSocials } from '../lib/waNumber.js';
-import { useCatalog } from '../lib/catalog.js';
+import { useCatalog, pageSlugs, pageConfigured, uploadedImage } from '../lib/catalog.js';
 import PurchaseToast from '../components/PurchaseToast.jsx';
 import './vip.css';
 
@@ -27,19 +27,72 @@ const IMG = {
 };
 
 /*
- * Harga & stok paket VIP dan order bump diambil dari ERP (Master Produk) berdasarkan slug.
- * Teks khusus halaman ini (nama paket, perks, harga pembanding marketplace) tetap di vipConfig.js.
+ * Paket VIP & order bump: produk dipilih di ERP → Landing Page CMS → kartu "Landing VIP" (dikirim sebagai pages.vip).
+ * Harga & stok selalu dari ERP (Master Produk). Untuk slug yang ada di vipConfig.js, teks khusus halaman ini
+ * (nama paket, perks, harga pembanding marketplace, foto bump) tetap dipakai. Produk lain memakai teks dari Master Produk:
+ * judul di landing / nama, deskripsi singkat, poin manfaat, dan harga coret sebagai harga pembanding.
  */
+const cfgBySlug = Object.fromEntries(VIP.packages.map((p) => [p.slug, p]));
+
+function erpPackage(e) {
+  const price = Number(e.price) || 0;
+  const compare = Number(e.compare_price) || 0;
+  const perks = Array.isArray(e.benefits) ? e.benefits.slice(0, 5) : [];
+  return {
+    id: e.slug,
+    slug: e.slug,
+    name: String(e.landing_title || e.name || '').trim(),
+    desc: String(e.tagline || '').trim(),
+    price,
+    marketplace: compare > price ? compare : price,
+    hot: !!e.is_featured,
+    perks,
+    inStock: e.in_stock !== false,
+  };
+}
+
 function useVipData() {
-  const { bySlug } = useCatalog();
-  const packages = VIP.packages.map((p) => {
-    const e = bySlug[p.slug];
-    return e ? { ...p, price: Number(e.price) || p.price, inStock: e.in_stock !== false } : { ...p, inStock: true };
-  });
-  const be = VIP.bump.slug ? bySlug[VIP.bump.slug] : null;
-  const bump = be
-    ? { ...VIP.bump, price: Number(be.price) || VIP.bump.price, normal: be.compare_price && be.compare_price > be.price ? Number(be.compare_price) : VIP.bump.normal, inStock: be.in_stock !== false }
-    : { ...VIP.bump, inStock: true };
+  const cat = useCatalog();
+  const { bySlug } = cat;
+  const chosen = pageSlugs(cat, 'vip', 'package');
+
+  let packages;
+  if (chosen && chosen.length) {
+    packages = chosen.map((slug) => {
+      const e = bySlug[slug];
+      const c = cfgBySlug[slug];
+      return c ? { ...c, price: Number(e.price) || c.price, inStock: e.in_stock !== false } : erpPackage(e);
+    });
+    // Label "Paling Laris" hanya satu: paket unggulan pertama
+    const hotIdx = packages.findIndex((p) => p.hot);
+    packages = packages.map((p, i) => ({ ...p, hot: i === hotIdx }));
+  } else {
+    packages = VIP.packages.map((p) => {
+      const e = bySlug[p.slug];
+      return e ? { ...p, price: Number(e.price) || p.price, inStock: e.in_stock !== false } : { ...p, inStock: true };
+    });
+  }
+
+  // Order bump: halaman sudah diatur di ERP → ikut pilihan ERP (boleh kosong = tanpa bump)
+  let bump;
+  if (pageConfigured(cat, 'vip')) {
+    const slug = pageSlugs(cat, 'vip', 'bump')?.[0];
+    const be = slug ? bySlug[slug] : null;
+    if (!be) {
+      bump = null;
+    } else {
+      const base = slug === VIP.bump.slug ? VIP.bump : { slug, name: String(be.landing_title || be.name || '').trim(), price: 0, normal: 0, img: uploadedImage(be.image_url) || VIP.bump.img };
+      const price = Number(be.price) || base.price;
+      const compare = Number(be.compare_price) || 0;
+      bump = { ...base, slug, price, normal: compare > price ? compare : (base.normal > price ? base.normal : price), inStock: be.in_stock !== false };
+    }
+  } else {
+    const be = VIP.bump.slug ? bySlug[VIP.bump.slug] : null;
+    bump = be
+      ? { ...VIP.bump, price: Number(be.price) || VIP.bump.price, normal: be.compare_price && be.compare_price > be.price ? Number(be.compare_price) : VIP.bump.normal, inStock: be.in_stock !== false }
+      : { ...VIP.bump, inStock: true };
+  }
+
   const main = packages.find((p) => p.hot) || packages[packages.length - 1];
   return { packages, bump, main };
 }
@@ -382,10 +435,13 @@ function ValueStack() {
 // Pembayaran lewat payment gateway yang aktif di ERP (Midtrans popup / iPaymu redirect). COD sudah dihapus.
 function Checkout({ onResult }) {
   const { packages, bump: BUMP } = useVipData();
-  const defaultIdx = Math.max(0, VIP.packages.findIndex((p) => p.hot));
+  const defaultIdx = Math.max(0, packages.findIndex((p) => p.hot));
   const [pickedIdx, setPkgIdx] = useState(defaultIdx);
+  // Daftar paket bisa berubah setelah data ERP datang: pilihan awal ikut paket unggulan
+  const [touched, setTouched] = useState(false);
+  useEffect(() => { if (!touched) setPkgIdx(defaultIdx); }, [defaultIdx, touched]);
   // Paket yang stoknya habis tidak bisa dipilih: pindah otomatis ke paket lain yang masih ada
-  let pkgIdx = pickedIdx;
+  let pkgIdx = Math.min(pickedIdx, packages.length - 1);
   if (!packages[pkgIdx]?.inStock) {
     const alt = packages.findIndex((p) => p.inStock);
     if (alt >= 0) pkgIdx = alt;
@@ -401,7 +457,7 @@ function Checkout({ onResult }) {
 
   const pkg = packages[pkgIdx];
   const soldOut = !pkg.inStock;
-  const withBump = bump && BUMP.inStock;
+  const withBump = !!(bump && BUMP && BUMP.inStock);
   const shippingFee = useShippingFee([pkg.slug, ...(withBump && BUMP.slug ? [BUMP.slug] : [])]);
   const total = pkg.price + (withBump ? BUMP.price : 0) + shippingFee;
   const normalTotal = pkg.marketplace + (withBump ? BUMP.normal : 0) + shippingFee;
@@ -456,7 +512,7 @@ function Checkout({ onResult }) {
   };
 
   const err = (k) => (bad[k] ? ' is-bad' : '');
-  const bumpPct = BUMP.normal > BUMP.price ? Math.round((1 - BUMP.price / BUMP.normal) * 100) : 0;
+  const bumpPct = BUMP && BUMP.normal > BUMP.price ? Math.round((1 - BUMP.price / BUMP.normal) * 100) : 0;
 
   return (
     <section className="vx-sec vx-checkout" id="pesan">
@@ -468,16 +524,16 @@ function Checkout({ onResult }) {
           <div className="vx-pkgs" role="radiogroup" aria-label="Pilihan paket">
             {packages.map((p, i) => (
               <label key={p.id} className={`vx-pkg${pkgIdx === i ? ' is-on' : ''}${p.hot && p.inStock ? ' is-hot' : ''}${p.inStock ? '' : ' is-out'}`}>
-                <input type="radio" name="pkg" checked={pkgIdx === i} disabled={!p.inStock} onChange={() => setPkgIdx(i)} />
+                <input type="radio" name="pkg" checked={pkgIdx === i} disabled={!p.inStock} onChange={() => { setTouched(true); setPkgIdx(i); }} />
                 {!p.inStock ? <span className="vx-ribbon vx-ribbon-out">STOK HABIS</span> : p.hot ? <span className="vx-ribbon"><i className="fa-solid fa-fire" /> PALING LARIS</span> : null}
                 <span className="vx-radio" />
                 <div className="vx-pkg-main">
                   <b>{p.name}</b>
                   <span className="vx-muted">{p.desc}</span>
-                  <ul>{p.perks.map((x) => <li key={x}><i className="fa-solid fa-check" /> {x}</li>)}</ul>
+                  {p.perks?.length ? <ul>{p.perks.map((x) => <li key={x}><i className="fa-solid fa-check" /> {x}</li>)}</ul> : null}
                 </div>
                 <div className="vx-pkg-price">
-                  <s>{rp(p.marketplace)}</s>
+                  {p.marketplace > p.price ? <s>{rp(p.marketplace)}</s> : null}
                   <b>{rp(p.price)}</b>
                 </div>
               </label>
@@ -547,7 +603,7 @@ function Checkout({ onResult }) {
             <i className="fa-solid fa-circle-check vx-pay-ok" />
           </div>
 
-          {BUMP.inStock ? (
+          {BUMP && BUMP.inStock ? (
           <label className={`vx-bump${bump ? ' is-on' : ''}`}>
             <input type="checkbox" checked={bump} onChange={(e) => setBump(e.target.checked)} />
             <span className="vx-check"><i className="fa-solid fa-check" /></span>

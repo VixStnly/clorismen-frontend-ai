@@ -6,7 +6,7 @@ import { PROVINCES, EMPTY_SHIP, shipErrors, SHIP_ORDER, shipPayload, useShipping
 import { initPixel, track, trackCustom } from '../lib/pixel.js';
 import { goThanks } from '../lib/thanks.js';
 import { useWaNumber } from '../lib/waNumber.js';
-import { useCatalog } from '../lib/catalog.js';
+import { useCatalog, pageSlugs } from '../lib/catalog.js';
 import {
   PRODUCTS, PACKAGES, SHOWCASE, QUESTIONS, QUICK_QA, FAQ,
   cleanAnswers, optionOf, recommend, reasons, consultantNote, routineFor,
@@ -27,10 +27,17 @@ const MAX_QTY = 5;
 /** Foto bawaan seeder (default-*) diabaikan, supaya kartu tetap memakai susunan foto produk. */
 const uploadedImage = (url) => (typeof url === 'string' && /^https?:\/\//.test(url) && !/\/default-[^/]*$/.test(url) ? url : null);
 
-/** Paket Skin Check + data ERP. Produk yang belum ada di ERP (atau harganya 0) tidak bisa dipesan. */
+/**
+ * Paket Skin Check + data ERP. Produk untuk tiap hasil (starter/daily/complete/cleanskin) dipilih di ERP →
+ * Landing Page CMS → kartu "Landing Konsultan" (pages.konsultan); kalau belum diatur, pakai slug bawaan di config.
+ * Aturan rekomendasinya tetap di skinCheckConfig.js. Produk yang belum ada di ERP (atau harganya 0) tidak bisa dipesan.
+ */
 function usePackages() {
   const cat = useCatalog();
-  const list = useMemo(() => PACKAGES.map((p) => {
+  const list = useMemo(() => PACKAGES.map((d) => {
+    const picked = pageSlugs(cat, 'konsultan', d.id)?.[0];
+    // Produk diganti dari ERP → teks & foto ikut Master Produk, bukan teks bawaan paket ini
+    const p = picked && picked !== d.slug ? { ...d, slug: picked, erpText: true, photo: true } : d;
     const e = cat.bySlug[p.slug];
     const price = e ? Number(e.price) || 0 : 0;
     const compare = e?.compare_price && Number(e.compare_price) > price ? Number(e.compare_price) : null;
@@ -38,7 +45,7 @@ function usePackages() {
     return {
       ...p,
       // Paket landing utama punya judul kartu "1 Paket" di ERP; di Skin Check pakai nama & deskripsi dari config.
-      title: p.erpText === false ? p.name : String(e?.landing_title || '').trim() || p.name,
+      title: p.erpText === false ? p.name : String(e?.landing_title || e?.name || '').trim() || p.name,
       desc: p.erpText === false ? p.desc : String(e?.tagline || '').trim() || p.desc,
       price,
       compare,
@@ -46,7 +53,7 @@ function usePackages() {
       exists,
       inStock: exists && e.in_stock !== false,
     };
-  }), [cat.bySlug]);
+  }), [cat]);
   return { loaded: cat.loaded, failed: cat.failed, list };
 }
 
