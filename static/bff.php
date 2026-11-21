@@ -82,6 +82,7 @@ $routes = [
     // Member area: token sesi hanya ada di cookie HttpOnly, diteruskan ke ERP lewat header (tidak pernah ke JavaScript)
     ['POST', '#^member/login$#', 'member/login', 0],
     ['POST', '#^member/password$#', 'member/password', 0],
+    ['POST', '#^member/address$#', 'member/address', 0],
     ['GET', '#^member/me$#', 'member/me', 0],
     ['GET', '#^member/ebooks/(\d{1,9})$#', 'member/ebooks/%s', 0],
     ['POST', '#^member/logout$#', 'member/logout', 0],
@@ -158,6 +159,15 @@ if ($method === 'POST') {
             str_ends_with($target, '/member/password') => [
                 'current_password' => is_string($payload['current_password'] ?? null) ? substr($payload['current_password'], 0, 100) : '',
                 'new_password' => is_string($payload['new_password'] ?? null) ? substr($payload['new_password'], 0, 100) : '',
+            ],
+            str_ends_with($target, '/member/address') => [
+                'name' => $str($payload['name'] ?? '', 80),
+                'phone' => $str($payload['phone'] ?? '', 30),
+                'province' => $str($payload['province'] ?? '', 80),
+                'city' => $str($payload['city'] ?? '', 80),
+                'district' => $str($payload['district'] ?? '', 80),
+                'postal_code' => $str($payload['postal_code'] ?? '', 10),
+                'address' => $str($payload['address'] ?? '', 300),
             ],
             default => [],
         };

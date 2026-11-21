@@ -3,7 +3,7 @@ import { useWaNumber, waHref } from '../lib/waNumber.js';
 import { api } from '../lib/api.js';
 import { loadMidtransSnap } from '../lib/midtrans.js';
 import { goThanks } from '../lib/thanks.js';
-import { PROVINCES, shipErrors, SHIP_ORDER, shipPayload } from '../lib/shipping.js';
+import { PROVINCES, shipErrors } from '../lib/shipping.js';
 import './member.css';
 
 /*
@@ -217,30 +217,37 @@ function Products({ onBuy }) {
  * Beli langsung dari member area: alamat diisi otomatis dari pesanan terakhir, bayar lewat payment gateway
  * yang sama dengan landing (Midtrans Snap / iPaymu), lalu pindah ke halaman /terima-kasih/{token}.
  */
-function Checkout({ product, defaults, onBack }) {
-  const d = defaults || {};
+const addrText = (a) => [a.address, a.district && `Kec. ${a.district}`, a.city, a.province, a.postal_code].filter(Boolean).join(', ');
+
+function AddressView({ a, email }) {
+  return (
+    <div className="mb-addrbox">
+      <b>{a.name} <span>· {a.phone}</span></b>
+      <p>{addrText(a)}</p>
+      {email ? <small><i className="fa-regular fa-envelope" /> {email}</small> : null}
+    </div>
+  );
+}
+
+function Checkout({ product, address, onBack, onEditAddress }) {
   const [qty, setQty] = useState(1);
-  const [name, setName] = useState(d.name || '');
-  const [wa, setWa] = useState(d.phone || '');
-  const [ship, setShip] = useState({ email: d.email || '', province: d.province || '', city: d.city || '', district: d.district || '', postal: d.postal_code || '', addr: d.address || '' });
-  const [bad, setBad] = useState({});
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-  const setS = (k) => (e) => setShip((x) => ({ ...x, [k]: k === 'postal' ? e.target.value.replace(/\D/g, '').slice(0, 5) : e.target.value }));
+  const a = address?.complete ? address.saved : null;
   const fee = product.free_shipping ? 0 : Number(product.shipping_fee || 0);
   const total = product.price * qty + fee;
 
   const submit = async (e) => {
     e.preventDefault();
-    if (busy) return;
-    const nextBad = { name: name.trim().length < 2, wa: !/^(0|62|8)\d{8,13}$/.test(wa.replace(/\D/g, '')), ...shipErrors(ship) };
-    setBad(nextBad);
-    if (['name', 'wa', ...SHIP_ORDER].some((k) => nextBad[k])) { setErr('Lengkapi data yang ditandai merah.'); return; }
+    if (busy || !a) return;
     setBusy(true); setErr('');
     try {
       const data = await api.createOrderIntent({
         items: [{ slug: product.slug, qty }],
-        customer: { name: name.trim().slice(0, 80), phone: wa.trim().slice(0, 30), ...shipPayload(ship), note: 'Member Area', source_url: window.location.href.split('#')[0].slice(0, 250) },
+        customer: {
+          name: a.name, phone: a.phone, email: address.email || '', province: a.province, city: a.city, district: a.district,
+          postal_code: a.postal_code || '', address: a.address, note: 'Member Area', source_url: window.location.href.split('#')[0].slice(0, 250),
+        },
       });
       if (!data.snap_token && data.redirect_url) { window.location.href = data.redirect_url; return; }
       if (data.snap_token && data.client_key && data.snap_js_url) {
@@ -260,7 +267,6 @@ function Checkout({ product, defaults, onBack }) {
     setBusy(false);
   };
 
-  const f = (k) => (bad[k] ? ' is-bad' : '');
   return (
     <form className="mb-checkout" onSubmit={submit} noValidate>
       <section className="mb-card">
@@ -277,23 +283,16 @@ function Checkout({ product, defaults, onBack }) {
       </section>
 
       <section className="mb-card">
-        <h2><i className="fa-solid fa-location-dot" /> Alamat pengiriman</h2>
-        {d.address ? <p className="mb-dim">Diisi otomatis dari pesanan terakhir kamu. Ubah kalau perlu.</p> : null}
-        <div className="mb-grid2">
-          <label>Nama penerima<input className={f('name')} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" /></label>
-          <label>Nomor WhatsApp<input className={f('wa')} value={wa} onChange={(e) => setWa(e.target.value)} inputMode="tel" autoComplete="tel" /></label>
-          <label>Email<input className={f('email')} type="email" value={ship.email} onChange={setS('email')} autoComplete="email" /></label>
-          <label>Provinsi
-            <select className={f('province')} value={ship.province} onChange={setS('province')}>
-              <option value="">Pilih provinsi</option>
-              {PROVINCES.map((pv) => <option key={pv} value={pv}>{pv}</option>)}
-            </select>
-          </label>
-          <label>Kota / Kabupaten<input className={f('city')} value={ship.city} onChange={setS('city')} autoComplete="address-level2" /></label>
-          <label>Kecamatan<input className={f('district')} value={ship.district} onChange={setS('district')} autoComplete="address-level3" /></label>
-          <label>Kode pos (opsional)<input className={f('postal')} value={ship.postal} onChange={setS('postal')} inputMode="numeric" autoComplete="postal-code" /></label>
-          <label className="full">Alamat lengkap<textarea className={f('addr')} rows={2} maxLength={250} value={ship.addr} onChange={setS('addr')} placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, patokan" autoComplete="street-address" /></label>
+        <div className="mb-card-head">
+          <h2><i className="fa-solid fa-location-dot" /> Alamat pengiriman</h2>
+          {a ? <button type="button" className="mb-link" onClick={onEditAddress}><i className="fa-solid fa-pen" /> Ganti</button> : null}
         </div>
+        {a ? <AddressView a={a} email={address.email} /> : (
+          <div className="mb-addr-empty">
+            <p><i className="fa-solid fa-circle-exclamation" /> Kamu belum mengatur alamat pengiriman. Atur dulu di profil, nanti setiap order di member area otomatis dikirim ke alamat itu.</p>
+            <button type="button" className="mb-btn sm" onClick={onEditAddress}><i className="fa-solid fa-location-dot" /> Atur alamat sekarang</button>
+          </div>
+        )}
       </section>
 
       <section className="mb-card">
@@ -303,9 +302,70 @@ function Checkout({ product, defaults, onBack }) {
         <div className="mb-kv total"><span>Total bayar</span><b>{rp(total)}</b></div>
         <p className="mb-dim small"><i className="fa-solid fa-lock" /> Bayar lewat QRIS / Virtual Account / E-wallet di payment gateway resmi. Status otomatis terkonfirmasi.</p>
         {err ? <p className="mb-msg bad">{err}</p> : null}
-        <button type="submit" className="mb-btn gold" disabled={busy}>{busy ? <><i className="fa-solid fa-spinner fa-spin" /> Memproses…</> : <>Bayar Sekarang <i className="fa-solid fa-lock" /></>}</button>
+        <button type="submit" className="mb-btn gold" disabled={busy || !a}>{busy ? <><i className="fa-solid fa-spinner fa-spin" /> Memproses…</> : a ? <>Bayar Sekarang <i className="fa-solid fa-lock" /></> : 'Atur alamat dulu untuk lanjut bayar'}</button>
       </section>
     </form>
+  );
+}
+
+function AddressCard({ address, onSaved, onContinue }) {
+  const init = address?.saved || address?.suggest || {};
+  const [editing, setEditing] = useState(!address?.complete);
+  const [f, setF] = useState({ name: init.name || '', phone: init.phone || '', province: init.province || '', city: init.city || '', district: init.district || '', postal: init.postal_code || '', addr: init.address || '' });
+  const [bad, setBad] = useState({});
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const set = (k) => (e) => setF((x) => ({ ...x, [k]: k === 'postal' ? e.target.value.replace(/\D/g, '').slice(0, 5) : e.target.value }));
+
+  const save = async (e) => {
+    e.preventDefault();
+    if (busy) return;
+    const { email: _e, ...shipBad } = shipErrors({ ...f, email: 'x@x.id' });
+    const nextBad = { name: f.name.trim().length < 2, phone: !/^(0|62|8)\d{8,13}$/.test(f.phone.replace(/\D/g, '')), ...shipBad };
+    setBad(nextBad);
+    if (Object.values(nextBad).some(Boolean)) { setMsg({ t: 'bad', m: 'Lengkapi data yang ditandai merah.' }); return; }
+    setBusy(true); setMsg(null);
+    const r = await call('member/address', { name: f.name.trim(), phone: f.phone.trim(), province: f.province, city: f.city.trim(), district: f.district.trim(), postal_code: f.postal.trim(), address: f.addr.trim() });
+    setBusy(false);
+    if (!r.ok) { setMsg({ t: 'bad', m: r.message || 'Gagal menyimpan alamat.' }); return; }
+    onSaved(r.data.address);
+    setEditing(false);
+    setMsg({ t: 'ok', m: 'Alamat tersimpan. Order berikutnya otomatis dikirim ke alamat ini.' });
+  };
+
+  const c = (k) => (bad[k] ? 'is-bad' : undefined);
+  return (
+    <section className="mb-card" id="alamat">
+      <div className="mb-card-head">
+        <h2><i className="fa-solid fa-location-dot" /> Alamat pengiriman</h2>
+        {!editing ? <button type="button" className="mb-link" onClick={() => { setEditing(true); setMsg(null); }}><i className="fa-solid fa-pen" /> Ubah</button> : null}
+      </div>
+      {!editing && address?.complete ? <AddressView a={address.saved} /> : (
+        <form onSubmit={save} noValidate>
+          {!address?.complete ? <p className="mb-addr-note"><i className="fa-solid fa-circle-info" /> Alamat ini dipakai setiap kali kamu order di member area.{address?.suggest?.address ? ' Sudah kami isi dari pesanan terakhir, cek lalu simpan.' : ''}</p> : null}
+          <div className="mb-grid2">
+            <label>Nama penerima<input className={c('name')} value={f.name} onChange={set('name')} autoComplete="name" /></label>
+            <label>Nomor WhatsApp<input className={c('phone')} value={f.phone} onChange={set('phone')} inputMode="tel" autoComplete="tel" /></label>
+            <label>Provinsi
+              <select className={c('province')} value={f.province} onChange={set('province')}>
+                <option value="">Pilih provinsi</option>
+                {PROVINCES.map((pv) => <option key={pv} value={pv}>{pv}</option>)}
+              </select>
+            </label>
+            <label>Kota / Kabupaten<input className={c('city')} value={f.city} onChange={set('city')} autoComplete="address-level2" /></label>
+            <label>Kecamatan<input className={c('district')} value={f.district} onChange={set('district')} autoComplete="address-level3" /></label>
+            <label>Kode pos (opsional)<input className={c('postal')} value={f.postal} onChange={set('postal')} inputMode="numeric" autoComplete="postal-code" /></label>
+            <label className="full">Alamat lengkap<textarea className={c('addr')} rows={2} maxLength={250} value={f.addr} onChange={set('addr')} placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, patokan" autoComplete="street-address" /></label>
+          </div>
+          <div className="mb-row-btns">
+            <button type="submit" className="mb-btn sm" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan alamat'}</button>
+            {address?.complete ? <button type="button" className="mb-link" onClick={() => { setEditing(false); setBad({}); setMsg(null); }}>Batal</button> : null}
+          </div>
+        </form>
+      )}
+      {msg ? <p className={`mb-msg ${msg.t}`}>{msg.m}</p> : null}
+      {onContinue && address?.complete && !editing ? <button type="button" className="mb-btn gold" onClick={onContinue}>Lanjut ke checkout <i className="fa-solid fa-arrow-right" /></button> : null}
+    </section>
   );
 }
 
@@ -433,7 +493,14 @@ function Dashboard({ data, onLogout }) {
   const pages = PAGES.filter((p) => !p.needs || data[p.needs]);
   const [page, go] = usePage([...pages.map((p) => p.id), 'beli']);
   const [buying, setBuying] = useState(null);
-  const buy = (p) => { setBuying(p); go('beli'); };
+  const [address, setAddress] = useState(data.address || null);
+  const [fromCheckout, setFromCheckout] = useState(false);
+  const buy = (p) => { setBuying(p); setFromCheckout(false); go('beli'); };
+  const editAddress = () => {
+    setFromCheckout(Boolean(buying));
+    go('akun');
+    setTimeout(() => document.getElementById('alamat')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+  };
   const current = page === 'beli' ? { label: 'Checkout', icon: 'fa-cart-shopping' } : (pages.find((p) => p.id === page) || pages[0]);
   const menuOn = page === 'beli' ? 'produk' : page;
   const helpHref = waHref('Halo admin Clorismen, saya member dan butuh bantuan.');
@@ -489,7 +556,7 @@ function Dashboard({ data, onLogout }) {
           </section>
         ) : null}
         {page === 'produk' || (page === 'beli' && !buying) ? <section className="mb-card"><Products onBuy={buy} /></section> : null}
-        {page === 'beli' && buying ? <Checkout product={buying} defaults={data.checkout} onBack={() => go('produk')} /> : null}
+        {page === 'beli' && buying ? <Checkout product={buying} address={address} onBack={() => go('produk')} onEditAddress={editAddress} /> : null}
         {page === 'akun' ? (
           <>
             <section className="mb-card">
@@ -499,6 +566,7 @@ function Dashboard({ data, onLogout }) {
               <div className="mb-kv"><span>WhatsApp</span><b>{data.member?.phone || '-'}</b></div>
               <div className="mb-kv"><span>Member sejak</span><b>{fmtDate(data.member?.since)}</b></div>
             </section>
+            <AddressCard address={address} onSaved={setAddress} onContinue={fromCheckout && buying ? () => { setFromCheckout(false); go('beli'); } : null} />
             <PasswordCard />
             <button type="button" className="mb-btn ghost" onClick={onLogout}><i className="fa-solid fa-right-from-bracket" /> Keluar dari Member Area</button>
           </>
